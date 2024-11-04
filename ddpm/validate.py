@@ -1,3 +1,5 @@
+import torch
+
 def validate(model, validation_data):
     model.eval()
     with torch.no_grad():
