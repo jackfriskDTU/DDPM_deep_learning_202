@@ -1,3 +1,6 @@
+import hydra
+from omegaconf import DictConfig
+
 import argparse
 import os
 import sys
@@ -7,15 +10,20 @@ from model import SimpleNN
 from utils import set_project_root
 from validate import validate
 
-def main():
+@hydra.main(config_path = "../config_files", config_name = "config", version_base = None)
+def main(cfg: DictConfig):
 
     # Set the project root directory
     set_project_root()
 
     # Define the network
-    input_size = 10
-    hidden_size = 5
-    output_size = 2
+    input_size = cfg.input_size
+    hidden_size = cfg.hidden_size
+    output_size = cfg.output_size
+    learning_rate = cfg.learning_rate
+    batch_size = cfg.batch_size
+    epochs = cfg.epochs
+
     model = SimpleNN(input_size, hidden_size, output_size)
 
     # Create a dummy input tensor
