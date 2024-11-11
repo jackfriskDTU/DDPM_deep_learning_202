@@ -12,3 +12,5 @@ class SimpleNN(nn.Module):
         x = self.fc2(x)
         return x
 
+if __name__ == '__main__':
+    print("esben")
