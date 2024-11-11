@@ -1,0 +1,9 @@
+defaults:
+  - _self_
+
+input_size: 10
+hidden_size: 5
+output_size: 2
+learning_rate: 0.001
+batch_size: 64
+epochs: 10
