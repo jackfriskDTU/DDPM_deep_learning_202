@@ -7,11 +7,23 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 class Preprocess:
-    def load_mnist(batch_size):
+    def load_dataset(batch_size, dataset):
+        if dataset == 'mnist':
+            train_dataset = datasets.MNIST(root='../data', train=True, download=True, transform=transforms.ToTensor())
+            test_dataset = datasets.MNIST(root='../data', train=False, download=True, transform=transforms.ToTensor())
+        elif dataset == 'cifar10':
+            train_dataset = datasets.CIFAR10(root='../data', train=True, download=True, transform=transforms.ToTensor())
+            test_dataset = datasets.CIFAR10(root='../data', train=False, download=True, transform=transforms.ToTensor())
+        else:
+            raise ValueError(f"Dataset {dataset} not supported. Choose 'mnist' or 'cifar10'")
 
-        # Load MNIST dataset
-        train_dataset = datasets.MNIST(root='../data', train=True, download=True, transform=transforms.ToTensor())
-        test_dataset = datasets.MNIST(root='../data', train=False, download=True, transform=transforms.ToTensor())
+        test_data = train_dataset[0]
+        test_img, test_label = test_data
+        print('test_img.shape:')
+        print(test_img.shape)
+
+        print('test_img')
+        print(test_img)
 
         # create subsets
         train_dataset = Subset(train_dataset, np.arange(0, 100))
@@ -34,24 +46,24 @@ class Preprocess:
         def __len__(self):
             return len(self.dataset)
 
-    def preprocess_mnist(batch_size):
-        train_loader, test_loader = Preprocess.load_mnist(batch_size)
+    def preprocess_dataset(batch_size, dataset='mnist'):
+        train_loader, test_loader = Preprocess.load_dataset(batch_size, dataset)
 
-        def scale(min_val, max_val, tensor):
-            # Scale to [0,1] first
-            tensor = (tensor - tensor.min()) / (tensor.max() - tensor.min())
-            # Then scale to [min_val, max_val]
-            tensor = tensor * (max_val - min_val) + min_val
-            return tensor
+        def normalize(tensor, target_min=-1, target_max=1):
+            """
+            Normalize tensor to [target_min, target_max] range
+            Assumes input tensor is already in [0,1] range from ToTensor()
+            """
+            return (tensor * (target_max - target_min)) + target_min
 
         # Create new loaders with transformed data
         transformed_train_loader = DataLoader(
-            Preprocess.TransformedDataset(train_loader.dataset, lambda x: scale(-1, 1, x)), 
+            Preprocess.TransformedDataset(train_loader.dataset, lambda x: normalize(x)), 
             batch_size=batch_size, 
             shuffle=True
         )
         transformed_test_loader = DataLoader(
-            Preprocess.TransformedDataset(test_loader.dataset, lambda x: scale(-1, 1, x)), 
+            Preprocess.TransformedDataset(test_loader.dataset, lambda x: normalize(x)), 
             batch_size=batch_size, 
             shuffle=False
         )
@@ -64,60 +76,67 @@ class Preprocess:
             images, labels = batch
             print(images.shape)
             break
+
+def transform_range(tensor, source_min=None, source_max=None, target_min=0, target_max=255):
+    """
+    Transform tensor from [source_min, source_max] to [target_min, target_max] range.
+    If source_min/max are None, they are taken from the tensor.
     
-    def save_mnist_image(loader, save_dir, index=0):
-        """
-        Save a single MNIST image from the provided loader to a specified directory.
+    Args:
+        tensor (torch.Tensor): Input tensor
+        source_min (float): Current minimum value. If None, uses tensor.min()
+        source_max (float): Current maximum value. If None, uses tensor.max()
+        target_min (float): Desired minimum value (default: 0)
+        target_max (float): Desired maximum value (default: 255)
+    
+    Returns:
+        torch.Tensor: Transformed tensor
+    """
+    # Get source range if not provided
+    if source_min is None:
+        source_min = tensor.min()
+    if source_max is None:
+        source_max = tensor.max()
         
-        Args:
-            loader: DataLoader containing MNIST images
-            save_dir: Directory where the image will be saved
-            index: Index of the image to save (default: 0)
+    # First normalize to [0,1]
+    normalized = (tensor - source_min) / (source_max - source_min)
+    
+    # Then scale to target range
+    transformed = normalized * (target_max - target_min) + target_min
+    
+    return transformed
+
+def save_image(image_tensor, save_dir, filename=None, index=0):
+    try:
+        os.makedirs(save_dir, exist_ok=True)
+        
+        image_pil = transforms.ToPILImage()(image_tensor)
+        
+        if filename is None:
+            filename = f'image_{index}.png'
             
-        Returns:
-            tuple: (save_path, label) of the saved image
-        """
-        try:
-            # Create save directory if it doesn't exist
-            os.makedirs(save_dir, exist_ok=True)
-            
-            # Get the dataset from the loader
-            dataset = loader.dataset
-            
-            # Get the image and label
-            if isinstance(dataset, Subset):
-                image, label = dataset.dataset[dataset.indices[index]]
-            else:
-                image, label = dataset[index]
-            
-            # Convert image for saving
-            # if isinstance(image, torch.Tensor):
-            #     # If image is scaled to [-1, 1], rescale to [0, 1]
-            #     if image.min() < 0:
-            #         image = (image + 1) / 2
-                
-            #     # Convert to PIL Image
-            #     image = transforms.ToPILImage()(image)
-            
-            # Create filename with index and label
-            filename = f'mnist_image_{index}_label_{label}.png'
-            save_path = os.path.join(save_dir, filename)
-            
-            # Save the image
-            image.save(save_path)
-            print(f"Image saved successfully to {save_path}")
-            
-            return save_path, label
-            
-        except Exception as e:
-            print(f"Error saving image: {str(e)}")
-            return None, None
+        save_path = os.path.join(save_dir, filename)
+        
+        image_pil.save(save_path)
+        print(f"Image saved successfully to {save_path}")
+        
+        return save_path
+        
+    except Exception as e:
+        print(f"Error saving image: {str(e)}")
+        return None
 
 if __name__ == '__main__':
-    train_loader, test_loader = Preprocess.preprocess_mnist(64)
-    # Preprocess.save_mnist_image(train_loader, save_dir='mnist_images', index=0)
-    # Preprocess.print_shape(train_loader)
-    print(train_loader.dataset[0])
-    # print('Train:', len(train_loader.dataset))
-    # print('Test:', len(test_loader.dataset))
-    # Preprocess.print_shape(train_loader)
+    train_loader, test_loader = Preprocess.preprocess_dataset(64, 'mnist')
+
+    fst_img, fst_label = train_loader.dataset[0]
+    
+    print('fst_img:', fst_img)
+    print('fst_img shape:', fst_img.shape)
+    print('fst_img label:', fst_label)
+
+    fst_img_normal = transform_range(fst_img, -1, 1, 0, 1)
+
+    print('fst_img_normal:', fst_img_normal)
+
+    save_path = save_image(fst_img_normal, save_dir='saved_images')
