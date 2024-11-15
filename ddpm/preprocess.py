@@ -4,7 +4,8 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset, Subset
 from torchvision import datasets,transforms
 from PIL import Image
-import matplotlib.pyplot as plt
+
+from forward_process import add_noise
 
 class Preprocess:
     def load_dataset(batch_size, dataset):
@@ -127,16 +128,31 @@ def save_image(image_tensor, save_dir, filename=None, index=0):
         return None
 
 if __name__ == '__main__':
-    train_loader, test_loader = Preprocess.preprocess_dataset(64, 'mnist')
+    train_loader, test_loader = Preprocess.preprocess_dataset(64, 'cifar10')
 
+    # Get a sample image and label
     fst_img, fst_label = train_loader.dataset[0]
+
+    # Save the original image before adding noise
+    fst_img = transform_range(fst_img, -1, 1, 0, 1)
+    save_path = save_image(fst_img, save_dir='saved_images_cifar10')
     
     print('fst_img:', fst_img)
     print('fst_img shape:', fst_img.shape)
     print('fst_img label:', fst_label)
 
-    fst_img_normal = transform_range(fst_img, -1, 1, 0, 1)
+    # Add batch dimension to fst_img to make it work with add_noise()
+    fst_img = fst_img.unsqueeze(0)
 
-    print('fst_img_normal:', fst_img_normal)
+    # Add noise to the image
+    T = 10000
+    betas = torch.linspace(1e-4, 0.02, T)
+    t = torch.tensor([9999])
+    fst_img_noisy = add_noise(fst_img, betas, t)
 
-    save_path = save_image(fst_img_normal, save_dir='saved_images')
+    # Remove batch dimension and transform to [0,1] range to save the image
+    fst_img_noisy = fst_img_noisy.squeeze(0)
+    fst_img_noisy_normal = transform_range(fst_img_noisy, -1, 1, 0, 1)
+
+    # Save the noisy image
+    save_path = save_image(fst_img_noisy_normal, save_dir='saved_images_cifar10_noise')
