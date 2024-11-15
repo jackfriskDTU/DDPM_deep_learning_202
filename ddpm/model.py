@@ -90,11 +90,16 @@ class UNet(nn.Module):
         if verbose:
             print(f'enc4 shape: {enc4.shape}')
 
+        # Convert t to float
+        t = t.float()
+
         # Initialize the time embedding
         t_emb = self.time_embed(t)
         # unsqueeze the time embedding to match the dimensions of enc4
         while len(t_emb.shape) < len(enc4.shape):
             t_emb = t_emb.unsqueeze(-1) 
+        
+        # t_emb = t_emb.long()
         enc4 = enc4 + t_emb
         
         if verbose:
@@ -134,7 +139,9 @@ class UNet(nn.Module):
 
 
 if __name__ == '__main__':
-    model = UNet(3, 3, 1)
-    x = torch.randn(1, 3, 64, 64)
-    t = torch.randn(1, 1)
-    y = model(x, t, verbose=False)
+    model = UNet(3, 3, 2)
+    x = torch.rand(2, 3, 64, 64)
+    t = torch.randint(1, 5, (1, 2)) 
+    print(type(t))
+    print(t)
+    y = model(x, t, verbose=True)
