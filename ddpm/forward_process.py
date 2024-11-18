@@ -9,7 +9,7 @@ def add_noise(df, betas, t):
     Parameters:
         df (torch.Tensor): Input tensor of shape (b, c, h, w), where 'b' is batch_size, 'c' is channels, 'h' is height of the data and 'w' is width.
         betas (torch.Tensor): Noise schedule of shape (T), where T is the total number of timesteps.
-        t (torch.Tensor): A timestep for each image in the batch. A tensor of shape (B,).
+        t (torch.Tensor): A timestep for each image in the batch. A tensor of shape (b,).
 
     Returns:
         torch.Tensor: The input tensor, but with added standard normally distributed noise for one time step.
