@@ -21,8 +21,6 @@ def add_noise(df, betas, t):
     # Get the cummulative alpha for the current timestep
     alpha_t_bar = alphas_cummulative[t]
 
-    print(alpha_t_bar)
-
     # Generate standard normal noise of the same shape as `df`
     noise = torch.randn_like(df)
 
