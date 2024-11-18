@@ -8,7 +8,7 @@ class UNet(nn.Module):
     Args:
         in_channels (int): Number of input channels.
         out_channels (int): Number of output channels.
-        time_dim (int): Dimension of the time embedding.
+        batch size (int): Dimension of the time embedding.
     Methods:
         conv_block(in_channels, out_channels):
             Creates a convolutional block with two convolutional layers followed by ReLU activations.
@@ -16,7 +16,7 @@ class UNet(nn.Module):
             Forward pass of the U-Net model.
             Args:
                 x (torch.Tensor): Input tensor of shape (batch_size, in_channels, height, width).
-                t (torch.Tensor): Time embedding tensor of shape (batch_size, time_dim).
+                t (torch.Tensor): Time embedding tensor of shape (batch_size).
                 verbose (bool): If True, prints the shape of intermediate tensors in the U-net
             Returns:
                 torch.Tensor: Output tensor of shape (batch_size, out_channels, height, width).
@@ -33,7 +33,7 @@ class UNet(nn.Module):
                 10. Return the final output tensor.
     """
 
-    def __init__(self, in_channels, out_channels, time_dim):
+    def __init__(self, in_channels, out_channels, batch_size):
         super(UNet, self).__init__()
         
         #  conv_block consists of two 
@@ -45,7 +45,7 @@ class UNet(nn.Module):
         
         # This line defines a linear layer to embed
         #  the time dimension into a 512-dimensional vector.
-        self.time_embed = nn.Linear(time_dim, 512)
+        self.time_embed = nn.Linear(batch_size, 512)
         
         # The decoder consists of four conv_block layers
         # followed by a final convolutional layer to output the final image.
