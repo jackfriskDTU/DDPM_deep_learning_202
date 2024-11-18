@@ -20,11 +20,11 @@ class Preprocess:
 
         test_data = train_dataset[0]
         test_img, test_label = test_data
-        print('test_img.shape:')
-        print(test_img.shape)
+        # print('test_img.shape:')
+        # print(test_img.shape)
 
-        print('test_img')
-        print(test_img)
+        # print('test_img')
+        # print(test_img)
 
         # create subsets
         train_dataset = Subset(train_dataset, np.arange(0, 100))
