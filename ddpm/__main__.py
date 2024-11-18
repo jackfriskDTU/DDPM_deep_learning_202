@@ -28,6 +28,7 @@ def main(cfg: DictConfig):
     epochs = cfg.training.epochs
 
 
+    # initialize the U-net model
     model = UNet(in_channels, out_channels, time_dim)
 
     # test the model
