@@ -29,7 +29,7 @@ def add_noise(df, betas, t):
     df_noise = df * alpha_t_bar.sqrt().view(-1, 1, 1, 1) \
             + (noise * (1 - alpha_t_bar).view(-1, 1, 1, 1))
     
-    return torch.clamp(df_noise, min=-1.0, max=1.0)
+    return torch.clamp(df_noise, min=-1.0, max=1.0), noise
 
 if __name__ == "__main__":
     # Set seed to get same answer
