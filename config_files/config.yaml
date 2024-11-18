@@ -7,7 +7,7 @@ model:
   output_size: 2
   in_channels: 3
   out_channels: 3
-  time_dim: 2
+  time_dim: 10
 
 training:
   learning_rate: 0.001
