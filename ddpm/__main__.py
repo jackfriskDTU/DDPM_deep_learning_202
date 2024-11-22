@@ -8,7 +8,7 @@ import torch
 
 from model import UNet, train_model
 from utils import set_project_root, init_weights, get_optimizer, loss_function
-from preprocess import Preprocess
+from preprocess import Preprocess, save_image
 from forward_process import add_noise
 from reverse_process import sample
 
@@ -55,12 +55,21 @@ def main(cfg: DictConfig):
         train, _ = Preprocess.preprocess_dataset(batch_size, dataset)
 
         # Train the model
-        train_model(train, model, device, time_dim, learning_rate, epochs, batch_size, beta_lower, beta_upper)        
+        train_model(train, model, device, time_dim, learning_rate, epochs, batch_size, beta_lower, beta_upper)       
+        
+        torch.save(model.state_dict(), f'model_weights/main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}.pt')
 
     if mode_sample:
         # Load the model weights
-        model.load_state_dict(torch.load('../model_weights/model.pt', map_location=torch.device('cuda:0')))
+        model.load_state_dict(torch.load(f'model_weights/main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}.pt', map_location=torch.device('cuda:0')))
         model.eval()
+
+        betas = torch.linspace(beta_lower, beta_upper, time_dim)
+
+        if dataset == 'mnist':
+            shape = (batch_size, in_channels, 28, 28)
+        elif dataset == 'cifar10':
+            shape = (batch_size, in_channels, 64, 64)
 
         # Sample from the model
         sampled_img = sample(model, time_dim, betas, shape)

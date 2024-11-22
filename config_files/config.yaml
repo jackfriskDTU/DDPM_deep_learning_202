@@ -1,15 +1,20 @@
 defaults:
   - _self_
 
+mode:
+  train: True
+  sample: False
+  dataset: "mnist" # "mnist" or "cifar10"
+
 model:
-  input_size: 64
-  hidden_size: 5
-  output_size: 2
-  in_channels: 3
-  out_channels: 3
+  in_channels: 1
+  out_channels: 1
   time_dim: 10
+  seed: 42
 
 training:
   learning_rate: 0.001
-  batch_size: 2
-  epochs: 10
+  batch_size: 1
+  epochs: 1
+  beta_lower: 0.0001 
+  beta_upper: 0.02
