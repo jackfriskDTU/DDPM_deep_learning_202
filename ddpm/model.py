@@ -1,6 +1,12 @@
 import torch
 import torch.nn as nn
 
+import sys
+import utils
+from preprocess import *
+from forward_process import *
+
+import matplotlib.pyplot as plt
 
 class UNet(nn.Module):
     """
@@ -45,7 +51,8 @@ class UNet(nn.Module):
         
         # This line defines a linear layer to embed
         #  the time dimension into a 512-dimensional vector.
-        self.time_embed = nn.Linear(batch_size, 512)
+        self.time_embed_layer_4 = nn.Linear(batch_size, 512)
+        self.time_embed_layer_3 = nn.Linear(batch_size, 256)
         
         # The decoder consists of four conv_block layers
         # followed by a final convolutional layer to output the final image.
@@ -67,82 +74,159 @@ class UNet(nn.Module):
         followed by ReLU activations."""
         return nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
+            nn.LeakyReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True)
+            nn.LeakyReLU(inplace=True)
         )
 
-    def forward(self, x, t, verbose=False):
+    def forward(self, x, t, verbose=False, layers=3):
         """Forward pass of the U-Net model.
         Verbose mode prints the shape of intermediate tensors."""
-        if verbose:
-            print(f'x shape: {x.shape}')
-        enc1 = self.encoder1(x)
-        if verbose:
-            print(f'enc1 shape: {enc1.shape}')
-        enc2 = self.encoder2(self.pool(enc1))
-        if verbose:
-            print(f'enc2 shape: {enc2.shape}')
-        enc3 = self.encoder3(self.pool(enc2))
-        if verbose:
-            print(f'enc3 shape: {enc3.shape}')
-        enc4 = self.encoder4(self.pool(enc3))
-        if verbose:
-            print(f'enc4 shape: {enc4.shape}')
-
-        # Convert t to float
-        t = t.float()
 
         # Initialize the time embedding
-        t_emb = self.time_embed(t)
-        # unsqueeze the time embedding to match the dimensions of enc4
-        while len(t_emb.shape) + 1 < len(enc4.shape):
-            t_emb = t_emb.unsqueeze(-1)
-        
-        # t_emb = t_emb.long()
-        enc4 = enc4 + t_emb
-        
-        if verbose:
-            print("-----------------")
-            print(f'enc4 shape: {enc4.shape}')
-        dec4 = self.upconv4(enc4)
-        dec4 = torch.cat((dec4, enc3), dim=1)
-        dec4 = self.decoder4(dec4)
-        
-        if verbose:
-            print(f'dec4 shape: {dec4.shape}')
-        dec3 = self.upconv3(dec4)
-        dec3 = torch.cat((dec3, enc2), dim=1)
-        dec3 = self.decoder3(dec3)
+        t_emb = self.time_embed_layer_3(t.float())
 
-        if verbose:
-            print(f'dec3 shape: {dec3.shape}')
+        enc1 = self.encoder1(x)
+        enc2 = self.encoder2(self.pool(enc1))
+        enc3 = self.encoder3(self.pool(enc2))
+        if (layers == 4):
+            enc4 = self.encoder4(self.pool(enc3))
+            t_emb = self.time_embed_layer_4(t.float())
+            
+
+        # Unsqueeze the time embedding to match the dimensions of the last encoding level
+        if (layers == 4):
+            while len(t_emb.shape) + 1 < len(enc4.shape):
+                t_emb = t_emb.unsqueeze(-1)
+            enc4 = enc4 + t_emb
+
+            dec4 = self.upconv4(enc4)
+            dec4 = torch.cat((dec4, enc3), dim=1)
+            dec4 = self.decoder4(dec4)
+
+            dec3 = self.upconv3(dec4)
+            dec3 = torch.cat((dec3, enc2), dim=1)
+            dec3 = self.decoder3(dec3)
+        else:
+            while len(t_emb.shape) + 1 < len(enc3.shape):
+                t_emb = t_emb.unsqueeze(-1)
+            enc3 = enc3 + t_emb
+
+            dec3 = self.upconv3(enc3)
+            dec3 = torch.cat((dec3, enc2), dim=1)
+            dec3 = self.decoder3(dec3)
+
         dec2 = self.upconv2(dec3)
         dec2 = torch.cat((dec2, enc1), dim=1)
         dec2 = self.decoder2(dec2)
         
-        if verbose:
-            print(f'dec2 shape: {dec2.shape}')
         dec1 = self.upconv1(dec2)
-        
+
         # Crop dec1 to match the dimensions of x
         if dec1.size(2) > x.size(2) or dec1.size(3) > x.size(3):
             dec1 = dec1[:, :, :x.size(2), :x.size(3)]
 
         dec1 = torch.cat((dec1, x), dim=1)
-        dec1 = self.decoder1(dec1)    
+        dec1 = self.decoder1(dec1)
 
         if verbose:
+            print(f'x shape: {x.shape}')
+            print(f'enc1 shape: {enc1.shape}')
+            print('enc1.size() =', enc1.size())
+            print(f'enc2 shape: {enc2.shape}')
+            print('enc2.size() =', enc2.size())
+            print(f'enc3 shape: {enc3.shape}')
+            print('enc3.size() =', enc3.size())
+            if (layers == 4):
+                print(f'enc4 shape: {enc4.shape}')
+                print('enc4.size() =', enc4.size())
             print(f'dec1 shape: {dec1.shape}')
+            print('dec1.size() =', dec1.size())
+            print(f'dec2 shape: {dec2.shape}')
+            print('dec2.size() =', dec2.size())
+            print(f'dec3 shape: {dec3.shape}')
+            print('dec3.size() =', dec3.size())
+            if (layers == 4):
+                print(f'dec4 shape: {dec4.shape}')
+                print('dec4.size() =', dec4.size())
 
         return dec1
 
+def train_model(train_loader, model, device, T=1000, beta_lower=1e-4, beta_upper=0.02, learning_rate=1e-3, num_epochs=4, batch_size = 64):
+    # Move to device
+    #model.to(device)
+
+    # Define the beta schedule
+    betas = torch.linspace(beta_lower, beta_upper, T, device=device)
+
+    # Get the optimizer
+    optimizer = utils.get_optimizer(model, learning_rate)
+
+    # Set the model to training mode
+    model.train()
+
+    # Placeholder to save loss
+    losses = []
+
+    # Start training
+    for epoch in range(num_epochs):
+
+        # Iterate over batches
+        for batch, _ in train_loader:
+            # Send to device
+            batch = batch.to(device, non_blocking=True)
+
+            # Generate random timesteps for each image in the batch
+            t = torch.randint(0, T, (batch_size,), device=device)
+
+            # Add noise
+            batch_noised, noise = add_noise(batch, betas, t, device)
+            batch_noised = batch_noised.to(device)
+            noise = noise.to(device)
+
+            # Forward pass
+            predicted_noise = model.forward(batch_noised, t, verbose=False)
+
+            # Compute loss
+            loss = utils.loss_function(predicted_noise, noise)
+
+            # Clean up gradients from the model.
+            optimizer.zero_grad()
+
+            # Compute gradients based on the loss from the current batch (backpropagation).
+            loss.backward()
+
+            # Take one optimizer step using the gradients computed in the previous step.
+            optimizer.step()
+
+            # Save the loss
+            losses.append(loss.item())
+
+            # Num epoch
+            print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item()}')
+
+    print("Finished training.")
+    return losses
 
 if __name__ == '__main__':
-    batch_size = 2
-    model = UNet(3, 3, batch_size)
-    x = torch.rand(batch_size, 3, 64, 64)
-    t = torch.randint(1, 5, (batch_size,))
-    print(t)
-    print(t.shape)
-    y = model(x, t, verbose=False)
+    # Set seed to get same answer
+    torch.manual_seed(1)
+
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+
+    BATCH_SIZE = 10
+    model = UNet(1, 1, BATCH_SIZE)
+    model.apply(utils.init_weights)
+    model.to(device)
+
+    train_loader, _ = Preprocess.preprocess_dataset(BATCH_SIZE, 'mnist')
+
+    losses = train_model(train_loader, model, device, T=1000, beta_lower=1e-4, beta_upper=0.02, 
+                         learning_rate=1e-4, num_epochs=1000, batch_size = BATCH_SIZE)
+
+    # Plot losses
+    plt.plot(losses)
+    plt.xlabel('Batch')
+    plt.ylabel('Loss')
+    plt.title('Training Loss')
+    plt.savefig('saved_images/training_loss.png')

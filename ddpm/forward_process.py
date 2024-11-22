@@ -2,7 +2,7 @@ import torch
 import sys
 import numpy as np
 
-def add_noise(df, betas, t):
+def add_noise(df, betas, t, device):
     """
     Adds noise to a tensor `df` for some timestep `t` with `betas` as the beta schedule.
 
@@ -16,19 +16,19 @@ def add_noise(df, betas, t):
     """
     # Convert to alpha to allow closed-form calculation of the noise scale (i.e. all noise in one go, not stepwise)
     alphas = 1 - betas
-    alphas_cummulative = torch.cumprod(alphas, dim=0)
+    alphas_cummulative = torch.cumprod(alphas, dim=0).to(device)
 
     # Get the cummulative alpha for the current timestep
     alpha_t_bar = alphas_cummulative[t]
 
     # Generate standard normal noise of the same shape as `df`
-    noise = torch.randn_like(df)
+    noise = torch.randn_like(df, device=device)
 
     # Scale the values of df (x0) as in equation (4), N(sqrt(a) * mu, (1-a)*I)
     # Return the input tensor with added noise
     df_noise = df * alpha_t_bar.sqrt().view(-1, 1, 1, 1) \
             + (noise * (1 - alpha_t_bar).view(-1, 1, 1, 1))
-    
+
     return torch.clamp(df_noise, min=-1.0, max=1.0), noise
 
 if __name__ == "__main__":
@@ -41,7 +41,6 @@ if __name__ == "__main__":
     df = torch.randn(B, C, H, W)  # Input tensor
     betas = torch.linspace(1e-4, 0.02, T)  # Example linear beta schedule
     t = torch.randint(0, T, (B,)) # Random timesteps for each batch element
-    #t = torch.tensor([0, 0])
 
     # Add noise
     print(df)
