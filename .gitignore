@@ -169,3 +169,6 @@ outputs/
 
 # generated plots
 plots/
+
+# images
+saved_images/
