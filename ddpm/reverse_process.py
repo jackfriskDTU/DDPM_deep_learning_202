@@ -41,6 +41,12 @@ def sample(model, timesteps, betas, shape, device):
 
         x_t = (1 / torch.sqrt(alpha_t)) * (x_t - frac * predicted_noise) + sigma_t * z
 
+        # if t % 10 == 0:
+        #     sampled_img = x_t[0]
+        #     save_image(sampled_img, save_dir=f'saved_images_sample', filename=f'{t}_sampled_image.png')
+        #     sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
+        #     save_image(sampled_img, save_dir=f'saved_images_sample', filename=f'{t}_sampled_image_trans.png')
+
     return x_t
 
 if __name__ == "__main__":
@@ -63,13 +69,7 @@ if __name__ == "__main__":
     sampled_img = sample(model, T, betas, shape)
     sampled_img = sampled_img[0]
 
-    print('sampled_img size:', sampled_img.size())
-    print(sampled_img.min(), sampled_img.max())
-
     sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
-
-    print('sampled_img size:', sampled_img.size())
-    print(sampled_img.min(), sampled_img.max())
 
     # Save the image
     save_image(sampled_img, save_dir='saved_images', filename=f'{seed}_3updated_sampled_image.png')

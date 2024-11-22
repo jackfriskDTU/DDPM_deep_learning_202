@@ -74,9 +74,9 @@ class UNet(nn.Module):
         followed by ReLU activations."""
         return nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
-            nn.LeakyReLU(inplace=True),
+            nn.ReLU(inplace=True),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
-            nn.LeakyReLU(inplace=True)
+            nn.ReLU(inplace=True)
         )
 
     def forward(self, x, t, verbose=False, layers=3):
