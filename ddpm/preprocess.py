@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader, TensorDataset, Subset
 from torchvision import datasets,transforms
 from PIL import Image
 
-from forward_process import add_noise
+# from forward_process import add_noise
 
 class Preprocess:
     def load_dataset(batch_size, dataset):
