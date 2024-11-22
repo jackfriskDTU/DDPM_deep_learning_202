@@ -50,7 +50,7 @@ if __name__ == "__main__":
 
     # Example setup
     B, C, H, W = 10, 1, 28, 28  # Batch size, channels, height, width
-    T = 10000  # Number of timesteps
+    T = 2000  # Number of timesteps
     betas = torch.linspace(1e-4, 0.02, T)  # Example linear beta schedule
     shape = (B, C, H, W)
     
