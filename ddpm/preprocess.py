@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader, TensorDataset, Subset
 from torchvision import datasets,transforms
 from PIL import Image
 
+import sys
 # from forward_process import add_noise
 
 class Preprocess:
@@ -27,8 +28,8 @@ class Preprocess:
         # print(test_img)
 
         # create subsets
-        train_dataset = Subset(train_dataset, np.arange(0, 100))
-        test_dataset = Subset(test_dataset, np.arange(0, 100))
+        train_dataset = Subset(train_dataset, np.arange(0, 6400))
+        test_dataset = Subset(test_dataset, np.arange(0, 6400))
 
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
@@ -128,7 +129,8 @@ def save_image(image_tensor, save_dir, filename=None, index=0):
         return None
 
 if __name__ == '__main__':
-    train_loader, test_loader = Preprocess.preprocess_dataset(64, 'cifar10')
+    train_loader, test_loader = Preprocess.preprocess_dataset(64, 'mnist')
+    sys.exit(1)
 
     # Get a sample image and label
     fst_img, fst_label = train_loader.dataset[0]

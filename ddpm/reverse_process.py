@@ -50,27 +50,26 @@ if __name__ == "__main__":
 
     # Example setup
     B, C, H, W = 10, 1, 28, 28  # Batch size, channels, height, width
-    T = 2000  # Number of timesteps
+    T = 1000  # Number of timesteps
     betas = torch.linspace(1e-4, 0.02, T)  # Example linear beta schedule
     shape = (B, C, H, W)
     
     # Load the model weights
     model = model.UNet(C, C, B)  # Adjust the parameters as needed
-    model.load_state_dict(torch.load('../model_weights/model.pt', map_location=torch.device('cuda:0')))
-    # model.eval()
+    model.load_state_dict(torch.load('model_weights/model_e06.pt', map_location=torch.device('cuda:0'), weights_only=True))
+    model.eval()
 
     # Sample from the model
     sampled_img = sample(model, T, betas, shape)
-
-    print('sampled_img size:', sampled_img.size())
-    print(sampled_img)
-
-
     sampled_img = sampled_img[0]
-    sampled_img = transform_range(sampled_img, -1, 1, 0, 1)
 
     print('sampled_img size:', sampled_img.size())
-    print(sampled_img)
+    print(sampled_img.min(), sampled_img.max())
+
+    sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
+
+    print('sampled_img size:', sampled_img.size())
+    print(sampled_img.min(), sampled_img.max())
 
     # Save the image
     save_image(sampled_img, save_dir='saved_images', filename=f'{seed}_2updated_sampled_image.png')

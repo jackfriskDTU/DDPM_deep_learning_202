@@ -214,7 +214,7 @@ if __name__ == '__main__':
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
-    BATCH_SIZE = 10
+    BATCH_SIZE = 64
     model = UNet(1, 1, BATCH_SIZE)
     model.apply(utils.init_weights)
     model.to(device)
@@ -222,7 +222,7 @@ if __name__ == '__main__':
     train_loader, _ = Preprocess.preprocess_dataset(BATCH_SIZE, 'mnist')
 
     losses = train_model(train_loader, model, device, T=1000, beta_lower=1e-4, beta_upper=0.02, 
-                         learning_rate=1e-4, num_epochs=100, batch_size = BATCH_SIZE)
+                         learning_rate=1e-6, num_epochs=10, batch_size = BATCH_SIZE)
 
     # Plot losses
     plt.plot(losses)
@@ -232,4 +232,4 @@ if __name__ == '__main__':
     plt.savefig('plots/training_loss.png')
 
     # Save model
-    torch.save(model.state_dict(), 'model_weights/model.pt')
+    torch.save(model.state_dict(), 'model_weights/model_e06.pt')
