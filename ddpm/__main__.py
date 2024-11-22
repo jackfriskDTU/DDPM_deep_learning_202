@@ -6,12 +6,11 @@ import os
 import sys
 import torch
 
-from model import UNet
-from utils import set_project_root
-from validate import validate
-import preprocess
-from preprocess import *
+from model import UNet, train_model
+from utils import set_project_root, init_weights, get_optimizer, loss_function
 from preprocess import Preprocess
+from forward_process import add_noise
+from reverse_process import sample
 
 @hydra.main(config_path = "../config_files", config_name = "config", version_base = None)
 def main(cfg: DictConfig):
@@ -19,57 +18,55 @@ def main(cfg: DictConfig):
     # Set the project root directory
     set_project_root()
 
-    # Define the network
-    input_size = cfg.model.input_size
-    hidden_size = cfg.model.hidden_size
-    output_size = cfg.model.output_size
+    # Define the mode
+    mode_train = cfg.mode.train
+    mode_sample = cfg.mode.sample
+    dataset = cfg.mode.dataset
+
+    # Define the model parameters
     in_channels = cfg.model.in_channels
     out_channels = cfg.model.out_channels
     time_dim = cfg.model.time_dim
+    seed = cfg.model.seed
+
+    # Define the training parameters
     learning_rate = cfg.training.learning_rate
     batch_size = cfg.training.batch_size
     epochs = cfg.training.epochs
+    beta_lower = cfg.training.beta_lower
+    beta_upper = cfg.training.beta_upper
 
+    # Define the device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    torch.manual_seed(seed)
 
     # initialize the U-net model
-    model = UNet(in_channels, out_channels, batch_size)
+    model = UNet(in_channels, out_channels, time_dim)
+    model.to(device)
 
-    # test the model
-    # x = torch.randn(batch_size, in_channels, input_size, input_size)
-    
-    train_loader, test_loader = Preprocess.preprocess_dataset(64, 'cifar10')
+    if mode_train:
+        model.apply(init_weights)
+        
+        # Load the optimizer
+        optimizer = get_optimizer(model, learning_rate)
 
-    # Get a sample image and label
-    fst_img, fst_label = train_loader.dataset[0]
+        # Load the training data
+        train, _ = Preprocess.preprocess_dataset(batch_size, dataset)
 
-    # Save the original image before adding noise
-    fst_img = transform_range(fst_img, -1, 1, 0, 1)
-    # save_path = save_image(fst_img, save_dir='saved_images_cifar10')
-    
-    print('fst_img:', fst_img)
-    print('fst_img shape:', fst_img.shape)
-    print('fst_img label:', fst_label)
+        # Train the model
+        train_model(train, model, device, time_dim, learning_rate, epochs, batch_size, beta_lower, beta_upper)        
 
-    # Add batch dimension to fst_img to make it work with add_noise()
-    fst_img = fst_img.unsqueeze(0)
-    betas = torch.linspace(1e-4, 0.02, time_dim)
+    if mode_sample:
+        # Load the model weights
+        model.load_state_dict(torch.load('../model_weights/model.pt', map_location=torch.device('cuda:0')))
+        model.eval()
 
-    t = torch.randint(0, time_dim, (batch_size,))
-    fst_img_noisy = add_noise(fst_img, betas, t)
+        # Sample from the model
+        sampled_img = sample(model, time_dim, betas, shape)
 
-    # Remove batch dimension and transform to [0,1] range to save the image
-    # fst_img_noisy = fst_img_noisy.squeeze(0)
-    fst_img_noisy_normal = transform_range(fst_img_noisy, -1, 1, 0, 1)
-
-    # Save the noisy image
-    # save_path = save_image(fst_img_noisy_normal, save_dir='saved_images_cifar10_noise') 
-    y = model(fst_img_noisy, t, verbose=False)
-
-    # # Create dummy validation data
-    # validation_data = [(torch.randn(1, input_size), torch.tensor([1])) for _ in range(5)]
-
-    # # Validate the model
-    # validate(model, validation_data)
+        # Save the image 
+        save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_sampled_image.png')
 
 if __name__ == "__main__":
     main()
