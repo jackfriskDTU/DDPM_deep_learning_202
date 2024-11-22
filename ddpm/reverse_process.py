@@ -1,7 +1,7 @@
 import torch
 import model
 from preprocess import *
-def sample(model, timesteps, betas, shape):
+def sample(model, timesteps, betas, shape, device):
     """
     Samples a new image from the learned reverse process.
     Args:
@@ -14,19 +14,19 @@ def sample(model, timesteps, betas, shape):
     """
     # Convert to alpha to allow closed-form calculation of the noise scale
     alphas = 1 - betas
-    alphas_cumulative = torch.cumprod(alphas, dim=0)
+    alphas_cumulative = torch.cumprod(alphas, dim=0).to(device)
 
     # Start from Gaussian noise
-    x_t = torch.randn(shape)
+    x_t = torch.randn(shape, device=device)
 
     for t in reversed(range(timesteps)):
         # Ensure t is a tensor
-        t_tensor = torch.tensor([t] * shape[0])
+        t_tensor = torch.tensor([t] * shape[0], device=device)
 
         if t > 0:
-            z = torch.randn(shape)
+            z = torch.randn(shape, device=device)
         else:
-            z = torch.zeros(shape)
+            z = torch.zeros(shape, device=device)
 
         sigma_t = torch.sqrt(betas[t])
 
@@ -49,14 +49,14 @@ if __name__ == "__main__":
     torch.manual_seed(seed)
 
     # Example setup
-    B, C, H, W = 10, 1, 28, 28  # Batch size, channels, height, width
-    T = 1000  # Number of timesteps
+    B, C, H, W = 64, 1, 28, 28  # Batch size, channels, height, width
+    T = 100  # Number of timesteps
     betas = torch.linspace(1e-4, 0.02, T)  # Example linear beta schedule
     shape = (B, C, H, W)
     
     # Load the model weights
     model = model.UNet(C, C, B)  # Adjust the parameters as needed
-    model.load_state_dict(torch.load('model_weights/model_e06.pt', map_location=torch.device('cuda:0'), weights_only=True))
+    model.load_state_dict(torch.load('model_weights/model_e06.pt', map_location=torch.device('cuda'), weights_only=True))
     model.eval()
 
     # Sample from the model
@@ -72,4 +72,4 @@ if __name__ == "__main__":
     print(sampled_img.min(), sampled_img.max())
 
     # Save the image
-    save_image(sampled_img, save_dir='saved_images', filename=f'{seed}_2updated_sampled_image.png')
+    save_image(sampled_img, save_dir='saved_images', filename=f'{seed}_3updated_sampled_image.png')

@@ -39,7 +39,7 @@ class UNet(nn.Module):
                 10. Return the final output tensor.
     """
 
-    def __init__(self, in_channels, out_channels, batch_size):
+    def __init__(self, in_channels, out_channels):
         super(UNet, self).__init__()
         
         #  conv_block consists of two 
@@ -51,8 +51,8 @@ class UNet(nn.Module):
         
         # This line defines a linear layer to embed
         #  the time dimension into a 512-dimensional vector.
-        self.time_embed_layer_4 = nn.Linear(batch_size, 512)
-        self.time_embed_layer_3 = nn.Linear(batch_size, 256)
+        self.time_embed_layer_4 = nn.Linear(1, 512)
+        self.time_embed_layer_3 = nn.Linear(1, 256)
         
         # The decoder consists of four conv_block layers
         # followed by a final convolutional layer to output the final image.
@@ -82,24 +82,26 @@ class UNet(nn.Module):
     def forward(self, x, t, verbose=False, layers=3):
         """Forward pass of the U-Net model.
         Verbose mode prints the shape of intermediate tensors."""
+        
+        # Unsqueeze the time embedding to match the dimensions of the last encoding level
+        while len(t.shape) < len(x.shape):
+            t = t.unsqueeze(1).float()
 
         # Initialize the time embedding
-        t_emb = self.time_embed_layer_3(t.float())
+        t_emb = self.time_embed_layer_3(t)
+        t_emb = t_emb.view(t_emb.size(0), t_emb.size(3), 1, 1)
 
         enc1 = self.encoder1(x)
         enc2 = self.encoder2(self.pool(enc1))
         enc3 = self.encoder3(self.pool(enc2))
         if (layers == 4):
             enc4 = self.encoder4(self.pool(enc3))
-            t_emb = self.time_embed_layer_4(t.float())
-            
 
-        # Unsqueeze the time embedding to match the dimensions of the last encoding level
-        if (layers == 4):
-            while len(t_emb.shape) + 1 < len(enc4.shape):
-                t_emb = t_emb.unsqueeze(-1)
+            # Embed the time dimension and add it to the output of the fourth encoder block.
+            t_emb = self.time_embed_layer_4(t)
+            t_emb = t_emb.view(t_emb.size(0), t_emb.size(3), 1, 1)
+
             enc4 = enc4 + t_emb
-
             dec4 = self.upconv4(enc4)
             dec4 = torch.cat((dec4, enc3), dim=1)
             dec4 = self.decoder4(dec4)
@@ -108,10 +110,7 @@ class UNet(nn.Module):
             dec3 = torch.cat((dec3, enc2), dim=1)
             dec3 = self.decoder3(dec3)
         else:
-            while len(t_emb.shape) + 1 < len(enc3.shape):
-                t_emb = t_emb.unsqueeze(-1)
             enc3 = enc3 + t_emb
-
             dec3 = self.upconv3(enc3)
             dec3 = torch.cat((dec3, enc2), dim=1)
             dec3 = self.decoder3(dec3)
@@ -212,10 +211,10 @@ if __name__ == '__main__':
     # Set seed to get same answer
     torch.manual_seed(1)
 
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    BATCH_SIZE = 64
-    model = UNet(1, 1, BATCH_SIZE)
+    BATCH_SIZE = 10
+    model = UNet(1, 1)
     model.apply(utils.init_weights)
     model.to(device)
 
@@ -232,4 +231,4 @@ if __name__ == '__main__':
     plt.savefig('plots/training_loss.png')
 
     # Save model
-    torch.save(model.state_dict(), 'model_weights/model_e06.pt')
+    #torch.save(model.state_dict(), 'model_weights/model_e06.pt')

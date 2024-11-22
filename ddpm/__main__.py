@@ -42,7 +42,7 @@ def main(cfg: DictConfig):
     torch.manual_seed(seed)
 
     # initialize the U-net model
-    model = UNet(in_channels, out_channels, time_dim)
+    model = UNet(in_channels, out_channels)
     model.to(device)
 
     if mode_train:
@@ -55,16 +55,18 @@ def main(cfg: DictConfig):
         train, _ = Preprocess.preprocess_dataset(batch_size, dataset)
 
         # Train the model
-        train_model(train, model, device, time_dim, learning_rate, epochs, batch_size, beta_lower, beta_upper)       
+        train_model(train, model, device, time_dim, beta_lower, beta_upper, learning_rate, epochs, batch_size)       
         
         torch.save(model.state_dict(), f'model_weights/main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}.pt')
 
     if mode_sample:
         # Load the model weights
-        model.load_state_dict(torch.load(f'model_weights/main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}.pt', map_location=torch.device('cuda:0')))
+        model.load_state_dict(torch.load(f'model_weights/main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}.pt',
+                                         map_location=torch.device('cuda:0'),
+                                         weights_only=True))
         model.eval()
 
-        betas = torch.linspace(beta_lower, beta_upper, time_dim)
+        betas = torch.linspace(beta_lower, beta_upper, time_dim, device=device)
 
         if dataset == 'mnist':
             shape = (batch_size, in_channels, 28, 28)
@@ -72,7 +74,7 @@ def main(cfg: DictConfig):
             shape = (batch_size, in_channels, 64, 64)
 
         # Sample from the model
-        sampled_img = sample(model, time_dim, betas, shape)
+        sampled_img = sample(model, time_dim, betas, shape, device)
 
         # Save the image 
         save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_sampled_image.png')
