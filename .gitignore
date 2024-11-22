@@ -166,3 +166,6 @@ data/
 
 # logs
 outputs/
+
+# generated plots
+plots/

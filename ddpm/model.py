@@ -222,11 +222,14 @@ if __name__ == '__main__':
     train_loader, _ = Preprocess.preprocess_dataset(BATCH_SIZE, 'mnist')
 
     losses = train_model(train_loader, model, device, T=1000, beta_lower=1e-4, beta_upper=0.02, 
-                         learning_rate=1e-4, num_epochs=1000, batch_size = BATCH_SIZE)
+                         learning_rate=1e-4, num_epochs=100, batch_size = BATCH_SIZE)
 
     # Plot losses
     plt.plot(losses)
     plt.xlabel('Batch')
     plt.ylabel('Loss')
     plt.title('Training Loss')
-    plt.savefig('saved_images/training_loss.png')
+    plt.savefig('plots/training_loss.png')
+
+    # Save model
+    torch.save(model.state_dict(), 'model_weights/model.pt')
