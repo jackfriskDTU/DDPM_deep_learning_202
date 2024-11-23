@@ -28,8 +28,8 @@ class Preprocess:
         # print(test_img)
 
         # create subsets
-        train_dataset = Subset(train_dataset, np.arange(0, 6400))
-        test_dataset = Subset(test_dataset, np.arange(0, 6400))
+        train_dataset = Subset(train_dataset, np.arange(0, 59904))
+        test_dataset = Subset(test_dataset, np.arange(0, 59904))
 
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)

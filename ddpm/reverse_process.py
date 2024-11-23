@@ -46,7 +46,7 @@ def sample(model, timesteps, betas, shape, device):
         #     save_image(sampled_img, save_dir=f'saved_images_sample', filename=f'{t}_sampled_image.png')
         #     sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
         #     save_image(sampled_img, save_dir=f'saved_images_sample', filename=f'{t}_sampled_image_trans.png')
-
+        torch.cuda.empty_cache()
     return x_t
 
 if __name__ == "__main__":

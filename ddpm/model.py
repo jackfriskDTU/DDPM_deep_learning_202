@@ -39,15 +39,15 @@ class UNet(nn.Module):
                 10. Return the final output tensor.
     """
 
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, dropout_prob=0.5):
         super(UNet, self).__init__()
         
         #  conv_block consists of two 
         # convolutional layers followed by ReLU activations.
-        self.encoder1 = self.conv_block(in_channels, 64)
-        self.encoder2 = self.conv_block(64, 128)
-        self.encoder3 = self.conv_block(128, 256)
-        self.encoder4 = self.conv_block(256, 512)
+        self.encoder1 = self.conv_block(in_channels, 64, dropout_prob)
+        self.encoder2 = self.conv_block(64, 128, dropout_prob)
+        self.encoder3 = self.conv_block(128, 256, dropout_prob)
+        self.encoder4 = self.conv_block(256, 512, dropout_prob)
         
         # This line defines a linear layer to embed
         #  the time dimension into a 512-dimensional vector.
@@ -56,10 +56,10 @@ class UNet(nn.Module):
         
         # The decoder consists of four conv_block layers
         # followed by a final convolutional layer to output the final image.
-        self.decoder4 = self.conv_block(512 + 256, 256)
-        self.decoder3 = self.conv_block(256 + 128, 128)
-        self.decoder2 = self.conv_block(128 + 64, 64)
-        self.decoder1 = self.conv_block(64 + in_channels, out_channels)
+        self.decoder4 = self.conv_block(512 + 256, 256, dropout_prob)
+        self.decoder3 = self.conv_block(256 + 128, 128, dropout_prob)
+        self.decoder2 = self.conv_block(128 + 64, 64, dropout_prob)
+        self.decoder1 = self.conv_block(64 + in_channels, out_channels, dropout_prob)
         
         # The pooling layer downsamples the input by a factor of 2.
         # The upconvolutional layer upsamples the input by a factor of 2.
@@ -69,14 +69,18 @@ class UNet(nn.Module):
         self.upconv2 = nn.ConvTranspose2d(128, 128, 2, stride=2)
         self.upconv1 = nn.ConvTranspose2d(64, 64, 2, stride=2)
 
-    def conv_block(self, in_channels, out_channels):
+    def conv_block(self, in_channels, out_channels, dropout_prob):
         """A convolutional block consists of two convolutional layers
         followed by ReLU activations."""
         return nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
+            nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
+            nn.Dropout(dropout_prob),
             nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True)
+            nn.BatchNorm2d(out_channels),
+            nn.ReLU(inplace=True),
+            nn.Dropout(dropout_prob)
         )
 
     def forward(self, x, t, verbose=False, layers=3):

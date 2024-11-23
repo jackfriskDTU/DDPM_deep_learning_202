@@ -22,13 +22,13 @@
 #BSUB -N
 ### -- Specify the output and error file. %J is the job-id --
 ### -- -o and -e mean append, -oo and -eo mean overwrite --
-#BSUB -o /work3/s194527/DDPM_deep_learning_202/std/gpu_%J.out
-#BSUB -e /work3/s194527/DDPM_deep_learning_202/std/gpu_%J.err
+#BSUB -o /dtu/blackhole/02/146594/DDPM_deep_learning_202/std/gpu_%J.out
+#BSUB -e /dtu/blackhole/02/146594/DDPM_deep_learning_202/std/gpu_%J.err
 # -- end of LSF options --
 
-source /full/path/to/miniconda3/bin/activate
+source /zhome/cc/c/146594/miniconda3/bin/activate
 conda activate ddpm_env
 
-cd path/to/DDPM_deep_learning_202
+cd /dtu/blackhole/02/146594/DDPM_deep_learning_202
 
 python ddpm
