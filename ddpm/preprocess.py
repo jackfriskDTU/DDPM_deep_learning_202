@@ -6,7 +6,7 @@ from torchvision import datasets,transforms
 from PIL import Image
 
 import sys
-# from forward_process import add_noise
+from forward_process import add_noise
 
 class Preprocess:
     def load_dataset(batch_size, dataset):
@@ -28,8 +28,8 @@ class Preprocess:
         # print(test_img)
 
         # create subsets
-        train_dataset = Subset(train_dataset, np.arange(0, 1))
-        test_dataset = Subset(test_dataset, np.arange(0, 1))
+        train_dataset = Subset(train_dataset, np.arange(0, 6400))
+        test_dataset = Subset(test_dataset, np.arange(0, 6400))
 
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
@@ -130,30 +130,41 @@ def save_image(image_tensor, save_dir, filename=None, index=0):
 
 if __name__ == '__main__':
     train_loader, test_loader = Preprocess.preprocess_dataset(64, 'mnist')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Get a sample image and label
-    fst_img, fst_label = train_loader.dataset[0]
+    fst_img, _ = train_loader.dataset[0]
+    fst_img.to(device)
 
     # Save the original image before adding noise
-    fst_img = transform_range(fst_img, -1, 1, 0, 1)
-    save_path = save_image(fst_img, save_dir='saved_images_cifar10')
+    fst_img = transform_range(fst_img, fst_img.min(), fst_img.max(), 0, 1)
+    save_image(fst_img, save_dir='saved_images_mnist', filename='original_image.png')
     
-    print('fst_img:', fst_img)
-    print('fst_img shape:', fst_img.shape)
-    print('fst_img label:', fst_label)
-
     # Add batch dimension to fst_img to make it work with add_noise()
     fst_img = fst_img.unsqueeze(0)
 
     # Add noise to the image
-    T = 10000
-    betas = torch.linspace(1e-4, 0.02, T)
-    t = torch.tensor([9999])
-    fst_img_noisy = add_noise(fst_img, betas, t)
+    T = 100
+    betas = torch.linspace(1e-4, 0.02, T, device=device)
 
-    # Remove batch dimension and transform to [0,1] range to save the image
-    fst_img_noisy = fst_img_noisy.squeeze(0)
-    fst_img_noisy_normal = transform_range(fst_img_noisy, -1, 1, 0, 1)
+    for T_t in [1, 2, 5, 10, 50, 99]:
+        t = torch.tensor([T_t], device=device)
+        # Summary stats for fst_img
+        print(f"Image min: {fst_img.min()}, max: {fst_img.max()}, mean: {fst_img.mean()}, std: {fst_img.std()}")
 
-    # Save the noisy image
-    save_path = save_image(fst_img_noisy_normal, save_dir='saved_images_cifar10_noise')
+        fst_img_noisy, noise = add_noise(fst_img, betas, t, device=device)
+
+        # Summary stats for fst_img_noisy
+        print(f"Before squeeze: min: {fst_img_noisy.min()}, max: {fst_img_noisy.max()}, mean: {fst_img_noisy.mean()}, std: {fst_img_noisy.std()}")
+
+        # Remove batch dimension and transform to [0,1] range to save the image
+        fst_img_noisy = fst_img_noisy.squeeze(0)
+        print(f"After squeeze: min: {fst_img_noisy.min()}, max: {fst_img_noisy.max()}, mean: {fst_img_noisy.mean()}, std: {fst_img_noisy.std()}")
+        
+        fst_img_noisy_normal = transform_range(fst_img_noisy, fst_img_noisy.min(), fst_img_noisy.max(), 0, 1)
+        print(f"After transform: min: {fst_img_noisy_normal.min()}, max: {fst_img_noisy_normal.max()}, mean: {fst_img_noisy_normal.mean()}, std: {fst_img_noisy_normal.std()}")
+
+
+        # Save the noisy image
+        save_image(fst_img_noisy_normal, save_dir='saved_images_mnist', filename=f'noisy_{T_t}_image.png')
+        #sys.exit(1)

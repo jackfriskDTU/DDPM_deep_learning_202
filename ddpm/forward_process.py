@@ -14,6 +14,7 @@ def add_noise(df, betas, t, device):
     Returns:
         torch.Tensor: The input tensor, but with added standard normally distributed noise for one time step.
     """
+    df = df.to(device)
     # Convert to alpha to allow closed-form calculation of the noise scale (i.e. all noise in one go, not stepwise)
     alphas = 1 - betas
     alphas_cummulative = torch.cumprod(alphas, dim=0).to(device)
@@ -26,10 +27,10 @@ def add_noise(df, betas, t, device):
 
     # Scale the values of df (x0) as in equation (4), N(sqrt(a) * mu, (1-a)*I)
     # Return the input tensor with added noise
-    df_noise = df * alpha_t_bar.sqrt().view(-1, 1, 1, 1) \
+    
+    df_noise = df * torch.sqrt(alpha_t_bar).view(-1, 1, 1, 1) \
             + (noise * (1 - alpha_t_bar).view(-1, 1, 1, 1))
-
-    return torch.clamp(df_noise, min=-1.0, max=1.0), noise
+    return df_noise, noise
 
 if __name__ == "__main__":
     # Set seed to get same answer
