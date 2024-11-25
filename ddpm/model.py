@@ -59,7 +59,12 @@ class UNet(nn.Module):
         self.decoder4 = self.conv_block(512 + 256, 256, dropout_prob)
         self.decoder3 = self.conv_block(256 + 128, 128, dropout_prob)
         self.decoder2 = self.conv_block(128 + 64, 64, dropout_prob)
-        self.decoder1 = self.conv_block(64 + in_channels, out_channels, dropout_prob)
+        self.decoder1 = nn.Sequential(
+            nn.Conv2d(64, out_channels, kernel_size=1)#,
+            # nn.BatchNorm2d(out_channels),
+            # nn.Dropout(dropout_prob)
+        )
+        #self.decoder1 = self.conv_block(64 + in_channels, out_channels, dropout_prob)
         
         # The pooling layer downsamples the input by a factor of 2.
         # The upconvolutional layer upsamples the input by a factor of 2.
@@ -91,69 +96,91 @@ class UNet(nn.Module):
         while len(t.shape) < len(x.shape):
             t = t.unsqueeze(1).float()
 
-        # Initialize the time embedding
-        t_emb = self.time_embed_layer_3(t)
-        t_emb = t_emb.view(t_emb.size(0), t_emb.size(3), 1, 1)
+        if layers == 3:
+            enc1 = self.encoder1(x)
+            enc2 = self.encoder2(self.pool(enc1))
+            bottleneck = self.encoder3(self.pool(enc2))
 
-        enc1 = self.encoder1(x)
-        enc2 = self.encoder2(self.pool(enc1))
-        enc3 = self.encoder3(self.pool(enc2))
-        if (layers == 4):
-            enc4 = self.encoder4(self.pool(enc3))
+            bottleneck_upconv = self.upconv3(bottleneck)
+            dec2 = self.decoder3(torch.cat((bottleneck_upconv, enc2), dim=1))
+            dec2_upconv = self.upconv2(dec2)
+            dec1 = self.decoder2(torch.cat((dec2_upconv, enc1), dim=1))
+            output = self.decoder1(dec1)
 
-            # Embed the time dimension and add it to the output of the fourth encoder block.
-            t_emb = self.time_embed_layer_4(t)
-            t_emb = t_emb.view(t_emb.size(0), t_emb.size(3), 1, 1)
+        elif layers == 4:
+            enc1 = self.encoder1(x)
+            enc2 = self.encoder2(self.pool(enc1))
+            enc3 = self.encoder3(self.pool(enc2))
+            # Practically identical to encoder 4
+            bottleneck = self.encoder4(self.pool(enc3))
 
-            enc4 = enc4 + t_emb
-            dec4 = self.upconv4(enc4)
-            dec4 = torch.cat((dec4, enc3), dim=1)
-            dec4 = self.decoder4(dec4)
+            bottleneck_upconv = self.upconv4(bottleneck)
+            dec3 = self.decoder4(torch.cat((bottleneck_upconv, enc3), dim=1))
+            dec3_upconv = self.upconv3(dec3)
+            dec2 = self.decoder3(torch.cat((dec3_upconv, enc2), dim=1))
+            dec2_upconv = self.upconv2(dec2)
+            dec1 = self.decoder2(torch.cat((dec2_upconv, enc1), dim=1))
+            output = self.decoder1(dec1)
 
-            dec3 = self.upconv3(dec4)
-            dec3 = torch.cat((dec3, enc2), dim=1)
-            dec3 = self.decoder3(dec3)
-        else:
-            enc3 = enc3 + t_emb
-            dec3 = self.upconv3(enc3)
-            dec3 = torch.cat((dec3, enc2), dim=1)
-            dec3 = self.decoder3(dec3)
-
-        dec2 = self.upconv2(dec3)
-        dec2 = torch.cat((dec2, enc1), dim=1)
-        dec2 = self.decoder2(dec2)
         
-        dec1 = self.upconv1(dec2)
 
-        # Crop dec1 to match the dimensions of x
-        if dec1.size(2) > x.size(2) or dec1.size(3) > x.size(3):
-            dec1 = dec1[:, :, :x.size(2), :x.size(3)]
+        # Initialize the time embedding
+        # t_emb = self.time_embed_layer_3(t)
+        # t_emb = t_emb.view(t_emb.size(0), t_emb.size(3), 1, 1)
 
-        dec1 = torch.cat((dec1, x), dim=1)
-        dec1 = self.decoder1(dec1)
+        # enc1 = self.encoder1(x)
+        # enc2 = self.encoder2(self.pool(enc1))
+        # enc3 = self.encoder3(self.pool(enc2))
+        # if (layers == 4):
+        #     enc4 = self.encoder4(self.pool(enc3))
+
+        #     # Embed the time dimension and add it to the output of the fourth encoder block.
+        #     t_emb = self.time_embed_layer_4(t)
+        #     t_emb = t_emb.view(t_emb.size(0), t_emb.size(3), 1, 1)
+
+        #     enc4 = enc4 + t_emb
+        #     dec4 = self.upconv4(enc4)
+        #     dec4 = torch.cat((dec4, enc3), dim=1)
+        #     dec4 = self.decoder4(dec4)
+
+        #     dec3 = self.upconv3(dec4)
+        #     dec3 = torch.cat((dec3, enc2), dim=1)
+        #     dec3 = self.decoder3(dec3)
+        # else:
+        #     enc3 = enc3 + t_emb
+        #     dec3 = self.decoder3(enc3)
+
+        # dec2 = self.upconv2(dec3)
+        # dec2 = torch.cat((dec2, enc1), dim=1)
+        # dec2 = self.decoder2(dec2)
+        
+        # dec1 = self.upconv1(dec2)
+
+        # # Crop dec1 to match the dimensions of x
+        # if dec1.size(2) > x.size(2) or dec1.size(3) > x.size(3):
+        #     #diff_x = dec1.size(2) - x.size(2)
+        #     print('dec1_before.size() =', dec1.size())
+
+        #     dec1 = dec1[:, :, :x.size(2), :x.size(3)]
+        #     print('dec1_after.size() =', dec1.size())
+
+        # dec1 = torch.cat((dec1, x), dim=1)
+        # dec1 = self.decoder1(dec1)
 
         if verbose:
-            print(f'x shape: {x.shape}')
-            print(f'enc1 shape: {enc1.shape}')
+            print('x.size() =', x.size())
             print('enc1.size() =', enc1.size())
-            print(f'enc2 shape: {enc2.shape}')
             print('enc2.size() =', enc2.size())
-            print(f'enc3 shape: {enc3.shape}')
-            print('enc3.size() =', enc3.size())
             if (layers == 4):
-                print(f'enc4 shape: {enc4.shape}')
-                print('enc4.size() =', enc4.size())
-            print(f'dec1 shape: {dec1.shape}')
-            print('dec1.size() =', dec1.size())
-            print(f'dec2 shape: {dec2.shape}')
+                print('enc3.size() =', enc3.size())
+            print('bottleneck.size() =', bottleneck.size())
+            if (layers == 4):
+                print('dec3.size() =', dec3.size())
             print('dec2.size() =', dec2.size())
-            print(f'dec3 shape: {dec3.shape}')
-            print('dec3.size() =', dec3.size())
-            if (layers == 4):
-                print(f'dec4 shape: {dec4.shape}')
-                print('dec4.size() =', dec4.size())
+            print('dec1.size() =', dec1.size())
+            print('output.size() =', output.size())
 
-        return dec1
+        return output
 
 def train_model(train_loader, model, device, T=1000, beta_lower=1e-4, beta_upper=0.02, learning_rate=1e-3, num_epochs=4, batch_size = 64):
     # Move to device
@@ -188,7 +215,7 @@ def train_model(train_loader, model, device, T=1000, beta_lower=1e-4, beta_upper
             noise = noise.to(device)
 
             # Forward pass
-            predicted_noise = model.forward(batch_noised, t, verbose=False)
+            predicted_noise = model.forward(batch_noised, t, verbose=True)
 
             # Compute loss
             loss = utils.loss_function(predicted_noise, noise)
