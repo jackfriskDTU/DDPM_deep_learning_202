@@ -39,7 +39,7 @@ class UNet(nn.Module):
                 10. Return the final output tensor.
     """
 
-    def __init__(self, in_channels, out_channels, dropout_prob=0.5):
+    def __init__(self, in_channels, out_channels, dropout_prob=0.1):
         super(UNet, self).__init__()
         
         # conv_block consists of two convolutional layers followed by ReLU activations.
