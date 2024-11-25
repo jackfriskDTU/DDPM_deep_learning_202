@@ -19,15 +19,18 @@ def sample(model, timesteps, betas, shape, device):
     alphas = 1 - betas
     alphas_cumulative = torch.cumprod(alphas, dim=0).to(device)
 
+    # Make df of shape shape
+    df = torch.randn(shape, device=device)
+
     # Start from Gaussian noise
-    x_t = torch.randn(shape, device=device)
+    x_t = torch.randn_like(df, device=device)
 
     for t in reversed(range(timesteps)):
         # Ensure t is a tensor
         t_tensor = torch.tensor([t] * shape[0], device=device)
 
         if t > 0:
-            z = torch.randn(shape, device=device)
+            z = torch.randn_like(x_t, device=device)
         else:
             z = torch.zeros(shape, device=device)
 
@@ -40,7 +43,7 @@ def sample(model, timesteps, betas, shape, device):
         alpha_t = alphas[t]
         alpha_t_bar = alphas_cumulative[t] #if t > 0 else torch.tensor(1.0)
 
-        frac = (betas[t]) / torch.sqrt(1 - alpha_t_bar)
+        frac = (betas[t]) / torch.sqrt(1 - alpha_t_bar)   
 
         x_t = (1 / torch.sqrt(alpha_t)) * (x_t - frac * predicted_noise) + (sigma_t * z)
 
