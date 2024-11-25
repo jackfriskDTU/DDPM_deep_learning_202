@@ -15,6 +15,6 @@ model:
 training:
   learning_rate: 0.0001
   batch_size: 1
-  epochs: 5000
+  epochs: 10000
   beta_lower: 0.0001 
   beta_upper: 0.02

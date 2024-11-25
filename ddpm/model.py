@@ -59,8 +59,8 @@ class UNet(nn.Module):
         self.decoder3 = self.conv_block(256 + 128 + 2, 128, dropout_prob)
         self.decoder2 = self.conv_block(128 + 64 + 2, 64, dropout_prob)
         self.decoder1 = nn.Sequential(
-            nn.Conv2d(64, out_channels, kernel_size=1)#,
-            # nn.BatchNorm2d(out_channels),
+            nn.Conv2d(64, out_channels, kernel_size=1),
+            nn.BatchNorm2d(out_channels)#,
             # nn.Dropout(dropout_prob)
         )
         #self.decoder1 = self.conv_block(64 + in_channels, out_channels, dropout_prob)

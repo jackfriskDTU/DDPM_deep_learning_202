@@ -1,6 +1,9 @@
 import torch
 import model
 from preprocess import *
+
+import matplotlib.pyplot as plt
+import numpy as np
 def sample(model, timesteps, betas, shape, device):
     """
     Samples a new image from the learned reverse process.
@@ -33,15 +36,25 @@ def sample(model, timesteps, betas, shape, device):
         # Predict the noise
         predicted_noise = model.forward(x_t, t_tensor)
 
-        # Calculate the posterior mean estimate for x_{t-1}
+        # # Calculate the posterior mean estimate for x_{t-1}
         alpha_t = alphas[t]
         alpha_t_bar = alphas_cumulative[t] #if t > 0 else torch.tensor(1.0)
 
-        frac = (1 - alpha_t) / torch.sqrt(1- alpha_t_bar)
+        frac = (betas[t]) / torch.sqrt(1 - alpha_t_bar)
 
-        x_t = (1 / torch.sqrt(alpha_t)) * (x_t - frac * predicted_noise) + sigma_t * z
+        x_t = (1 / torch.sqrt(alpha_t)) * (x_t - frac * predicted_noise) + (sigma_t * z)
 
-        # if t % 10 == 0:
+        # if t % 100 == 0:
+        #     # sampled_img = predicted_noise
+        #     # # Plot the density of the pixel values
+        #     # sampled_img = sampled_img.detach().cpu().flatten().numpy()
+        #     # mean = np.mean(sampled_img)
+        #     # std = np.std(sampled_img)
+        #     # min_val = np.min(sampled_img)
+        #     # max_val = np.max(sampled_img)
+        #     # sum_val = np.sum(sampled_img)
+
+        #     # print(f'Mean: {mean}, Std: {std}, Min: {min_val}, Max: {max_val}, Sum: {sum_val}')
         #     sampled_img = x_t[0]
         #     save_image(sampled_img, save_dir=f'saved_images_sample', filename=f'{t}_sampled_image.png')
         #     sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
