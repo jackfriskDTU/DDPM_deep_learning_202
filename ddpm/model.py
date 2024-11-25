@@ -42,23 +42,22 @@ class UNet(nn.Module):
     def __init__(self, in_channels, out_channels, dropout_prob=0.5):
         super(UNet, self).__init__()
         
-        #  conv_block consists of two 
-        # convolutional layers followed by ReLU activations.
-        self.encoder1 = self.conv_block(in_channels, 64, dropout_prob)
-        self.encoder2 = self.conv_block(64, 128, dropout_prob)
-        self.encoder3 = self.conv_block(128, 256, dropout_prob)
-        self.encoder4 = self.conv_block(256, 512, dropout_prob)
+        # conv_block consists of two convolutional layers followed by ReLU activations.
+        # Adding +1 to the in_channels to account for the time dimension.
+        self.encoder1 = self.conv_block(in_channels + 1, 64, dropout_prob)
+        self.encoder2 = self.conv_block(64 + 1, 128, dropout_prob)
+        self.encoder3 = self.conv_block(128 + 1, 256, dropout_prob)
+        self.encoder4 = self.conv_block(256 + 1, 512, dropout_prob)
         
-        # This line defines a linear layer to embed
-        #  the time dimension into a 512-dimensional vector.
-        self.time_embed_layer_4 = nn.Linear(1, 512)
-        self.time_embed_layer_3 = nn.Linear(1, 256)
+        # This line defines a linear layer to embed the time dimension into a 512-dimensional vector.
+        # self.time_embed_layer_4 = nn.Linear(1, 512)
+        # self.time_embed_layer_3 = nn.Linear(1, 256)
         
-        # The decoder consists of four conv_block layers
-        # followed by a final convolutional layer to output the final image.
-        self.decoder4 = self.conv_block(512 + 256, 256, dropout_prob)
-        self.decoder3 = self.conv_block(256 + 128, 128, dropout_prob)
-        self.decoder2 = self.conv_block(128 + 64, 64, dropout_prob)
+        # The decoder consists of four conv_block layers followed by a final convolutional layer to output the final image.
+        # Adding +1 to the in_channels to account for the time dimension.
+        self.decoder4 = self.conv_block(512 + 256 + 2, 256, dropout_prob)
+        self.decoder3 = self.conv_block(256 + 128 + 2, 128, dropout_prob)
+        self.decoder2 = self.conv_block(128 + 64 + 2, 64, dropout_prob)
         self.decoder1 = nn.Sequential(
             nn.Conv2d(64, out_channels, kernel_size=1)#,
             # nn.BatchNorm2d(out_channels),
@@ -68,6 +67,7 @@ class UNet(nn.Module):
         
         # The pooling layer downsamples the input by a factor of 2.
         # The upconvolutional layer upsamples the input by a factor of 2.
+        # Adding +1 to the in_channels to account for the time dimension.
         self.pool = nn.MaxPool2d(2)
         self.upconv4 = nn.ConvTranspose2d(512, 512, 2, stride=2)
         self.upconv3 = nn.ConvTranspose2d(256, 256, 2, stride=2)
@@ -87,24 +87,43 @@ class UNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.Dropout(dropout_prob)
         )
+    
+    def add_timestep(self, x, t, batch_size):
+        """Add timestep information to the input tensor."""
+        t = t.view(batch_size, 1, 1, 1)
+        t = t.expand(-1 , 1, x.size(2), x.size(3))
+
+        return torch.cat([x, t], dim=1)
 
     def forward(self, x, t, verbose=False, layers=3):
         """Forward pass of the U-Net model.
         Verbose mode prints the shape of intermediate tensors."""
         
         # Unsqueeze the time embedding to match the dimensions of the last encoding level
-        while len(t.shape) < len(x.shape):
-            t = t.unsqueeze(1).float()
+        # while len(t.shape) < len(x.shape):
+        #     t = t.unsqueeze(1).float()
+
+        # Concatenate the time embedding as an additional channel
+        x = self.add_timestep(x, t, x.size(0))
 
         if layers == 3:
             enc1 = self.encoder1(x)
+            enc1 = self.add_timestep(enc1, t, enc1.size(0))
             enc2 = self.encoder2(self.pool(enc1))
+            enc2 = self.add_timestep(enc2, t, enc2.size(0))
             bottleneck = self.encoder3(self.pool(enc2))
 
             bottleneck_upconv = self.upconv3(bottleneck)
-            dec2 = self.decoder3(torch.cat((bottleneck_upconv, enc2), dim=1))
+            bottleneck_upconv = torch.cat((bottleneck_upconv, enc2), dim=1)
+            bottleneck_upconv = self.add_timestep(bottleneck_upconv, t, bottleneck_upconv.size(0))
+            dec2 = self.decoder3(bottleneck_upconv)
+            
             dec2_upconv = self.upconv2(dec2)
-            dec1 = self.decoder2(torch.cat((dec2_upconv, enc1), dim=1))
+            dec2_upconv = torch.cat((dec2_upconv, enc1), dim=1)
+            dec2_upconv = self.add_timestep(dec2_upconv, t, dec2_upconv.size(0))
+            dec1 = self.decoder2(dec2_upconv)
+            # We do not add timestep in the 1x1 conv, should we?
+            #dec1 = self.add_timestep(dec1, t, dec1.size(0))
             output = self.decoder1(dec1)
 
         elif layers == 4:
@@ -215,7 +234,7 @@ def train_model(train_loader, model, device, T=1000, beta_lower=1e-4, beta_upper
             noise = noise.to(device)
 
             # Forward pass
-            predicted_noise = model.forward(batch_noised, t, verbose=True)
+            predicted_noise = model.forward(batch_noised, t, verbose=False)
 
             # Compute loss
             loss = utils.loss_function(predicted_noise, noise)

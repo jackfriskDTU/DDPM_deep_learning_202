@@ -3,7 +3,7 @@ defaults:
 
 mode:
   train: True
-  sample: False
+  sample: True
   dataset: "mnist" # "mnist" or "cifar10"
 
 model:
@@ -14,7 +14,7 @@ model:
 
 training:
   learning_rate: 0.0001
-  batch_size: 256
-  epochs: 100
+  batch_size: 1
+  epochs: 5000
   beta_lower: 0.0001 
   beta_upper: 0.02

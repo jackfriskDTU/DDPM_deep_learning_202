@@ -47,9 +47,6 @@ def main(cfg: DictConfig):
 
     if mode_train:
         model.apply(init_weights)
-        
-        # Load the optimizer
-        optimizer = get_optimizer(model, learning_rate)
 
         # Load the training data
         train, _ = Preprocess.preprocess_dataset(batch_size, dataset)
