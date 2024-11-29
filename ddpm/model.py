@@ -201,9 +201,15 @@ class UNet(nn.Module):
 
         return output
 
-def train_model(train_loader, model, device, T=1000, beta_lower=1e-4, beta_upper=0.02, learning_rate=1e-3, num_epochs=4, batch_size = 64):
+def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-4, beta_upper=0.02, learning_rate=1e-3, num_epochs=4, batch_size = 64, early_stopping=False):
     # Move to device
     #model.to(device)
+
+    # Initiate best_loss
+    best_loss = float("inf")
+
+    # best epoch counter
+    best_epoch = 0
 
     # Define the beta schedule
     betas = torch.linspace(beta_lower, beta_upper, T, device=device)
@@ -214,11 +220,12 @@ def train_model(train_loader, model, device, T=1000, beta_lower=1e-4, beta_upper
     # Set the model to training mode
     model.train()
 
-    # Placeholder to save loss
-    losses = []
+
 
     # Start training
     for epoch in range(num_epochs):
+        # Placeholder to save loss
+        losses = []
 
         # Iterate over batches
         for batch, _ in train_loader:
@@ -251,8 +258,39 @@ def train_model(train_loader, model, device, T=1000, beta_lower=1e-4, beta_upper
             # Save the loss
             losses.append(loss.item())
 
-            # Num epoch
-            print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {loss.item()}')
+        # Compute the average loss for the epoch
+        train_loss = sum(losses) / len(losses)
+
+       # Validation phase
+        model.eval()
+        test_loss = []
+        with torch.no_grad():
+            for batch, _ in test_loader:
+                batch = batch.to(device, non_blocking=True)
+                t = torch.randint(0, T, (batch_size,), device=device)
+                batch_noised, noise = add_noise(batch, betas, t, device)
+                batch_noised = batch_noised.to(device)
+                noise = noise.to(device)
+
+                predicted_noise = model.forward(batch_noised, t, verbose=False)
+                loss = utils.loss_function(predicted_noise, noise)
+                test_loss.append(loss.item())
+
+        test_loss = sum(test_loss) / len(test_loss)
+
+        print(f'Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
+
+    # Save the model if the validation loss is the best we've seen so far
+    # Early stopping
+        if early_stopping and test_loss < best_loss:
+            best_loss = test_loss
+            best_epoch = epoch
+            torch.save(model.state_dict(), 'model_weights/best_es_model.pt')
+
+        elif epoch - best_epoch > 10:
+            print(f'Validation loss has not improved for 10 epochs. Best loss: {best_loss:.4f} at epoch {best_epoch}')
+
+
 
     print("Finished training.")
     return losses
