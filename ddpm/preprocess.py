@@ -9,7 +9,7 @@ import sys
 from forward_process import add_noise
 
 class Preprocess:
-    def load_dataset(batch_size, dataset):
+    def load_dataset(batch_size, dataset, train_size=200, test_size=20):
         if dataset == 'mnist':
             train_dataset = datasets.MNIST(root='../data', train=True, download=True, transform=transforms.ToTensor())
             test_dataset = datasets.MNIST(root='../data', train=False, download=True, transform=transforms.ToTensor())
@@ -28,8 +28,8 @@ class Preprocess:
         # print(test_img)
 
         # create subsets
-        train_dataset = Subset(train_dataset, np.arange(0, 6400))
-        test_dataset = Subset(test_dataset, np.arange(0, 6400))
+        train_dataset = Subset(train_dataset, np.arange(0, train_size))
+        test_dataset = Subset(test_dataset, np.arange(0, test_size))
 
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
@@ -48,8 +48,8 @@ class Preprocess:
         def __len__(self):
             return len(self.dataset)
 
-    def preprocess_dataset(batch_size, dataset='mnist'):
-        train_loader, test_loader = Preprocess.load_dataset(batch_size, dataset)
+    def preprocess_dataset(batch_size, dataset='mnist', train_size=200, test_size=20):
+        train_loader, test_loader = Preprocess.load_dataset(batch_size, dataset, train_size, test_size)
 
         def normalize(tensor, target_min=-1, target_max=1):
             """
