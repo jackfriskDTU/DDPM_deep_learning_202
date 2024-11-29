@@ -27,7 +27,6 @@ def add_noise(df, betas, t, device):
 
     # Scale the values of df (x0) as in equation (4), N(sqrt(a) * mu, (1-a)*I)
     # Return the input tensor with added noise
-    
     df_noise = df * torch.sqrt(alpha_t_bar).view(-1, 1, 1, 1) \
             + (noise * (1 - alpha_t_bar).view(-1, 1, 1, 1))
     return df_noise, noise
@@ -35,6 +34,7 @@ def add_noise(df, betas, t, device):
 if __name__ == "__main__":
     # Set seed to get same answer
     torch.manual_seed(1)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Example setup
     B, C, H, W = 2, 1, 3, 3  # Batch size, channels, height, width
@@ -44,5 +44,7 @@ if __name__ == "__main__":
     t = torch.randint(0, T, (B,)) # Random timesteps for each batch element
 
     # Add noise
-    print(df)
-    print(add_noise(df, betas, t))
+    df_noised, noise = add_noise(df, betas, t, device)
+    print('df:', df)
+    print('noise:', noise)
+    print('df_noised:', df_noised)

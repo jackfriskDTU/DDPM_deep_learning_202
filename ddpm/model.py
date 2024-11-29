@@ -41,38 +41,40 @@ class UNet(nn.Module):
 
     def __init__(self, in_channels, out_channels, dropout_prob=0.1):
         super(UNet, self).__init__()
+
+        # List of values for the number of parameters in each layer
+        self.num_params = [32, 64, 128, 256]
         
         # conv_block consists of two convolutional layers followed by ReLU activations.
         # Adding +1 to the in_channels to account for the time dimension.
-        self.encoder1 = self.conv_block(in_channels + 1, 64, dropout_prob)
-        self.encoder2 = self.conv_block(64 + 1, 128, dropout_prob)
-        self.encoder3 = self.conv_block(128 + 1, 256, dropout_prob)
-        self.encoder4 = self.conv_block(256 + 1, 512, dropout_prob)
+        self.encoder1 = self.conv_block(in_channels + 1, self.num_params[0], dropout_prob)
+        self.encoder2 = self.conv_block(self.num_params[0] + 1, self.num_params[1], dropout_prob)
+        self.encoder3 = self.conv_block(self.num_params[1] + 1, self.num_params[2], dropout_prob)
+        self.encoder4 = self.conv_block(self.num_params[2] + 1, self.num_params[3], dropout_prob)
         
         # This line defines a linear layer to embed the time dimension into a 512-dimensional vector.
         # self.time_embed_layer_4 = nn.Linear(1, 512)
-        # self.time_embed_layer_3 = nn.Linear(1, 256)
+        # self.time_embed_layer_3 = nn.Linear(1, self.num_params[2])
         
         # The decoder consists of four conv_block layers followed by a final convolutional layer to output the final image.
         # Adding +1 to the in_channels to account for the time dimension.
-        self.decoder4 = self.conv_block(512 + 256 + 2, 256, dropout_prob)
-        self.decoder3 = self.conv_block(256 + 128 + 2, 128, dropout_prob)
-        self.decoder2 = self.conv_block(128 + 64 + 2, 64, dropout_prob)
+        self.decoder4 = self.conv_block(self.num_params[3] + self.num_params[2] + 2, self.num_params[2], dropout_prob)
+        self.decoder3 = self.conv_block(self.num_params[2] + self.num_params[1] + 2, self.num_params[1], dropout_prob)
+        self.decoder2 = self.conv_block(self.num_params[1] + self.num_params[0] + 2, self.num_params[0], dropout_prob)
         self.decoder1 = nn.Sequential(
-            nn.Conv2d(64, out_channels, kernel_size=1),
+            nn.Conv2d(self.num_params[0], out_channels, kernel_size=1),
             nn.BatchNorm2d(out_channels)#,
             # nn.Dropout(dropout_prob)
         )
-        #self.decoder1 = self.conv_block(64 + in_channels, out_channels, dropout_prob)
         
         # The pooling layer downsamples the input by a factor of 2.
         # The upconvolutional layer upsamples the input by a factor of 2.
         # Adding +1 to the in_channels to account for the time dimension.
         self.pool = nn.MaxPool2d(2)
-        self.upconv4 = nn.ConvTranspose2d(512, 512, 2, stride=2)
-        self.upconv3 = nn.ConvTranspose2d(256, 256, 2, stride=2)
-        self.upconv2 = nn.ConvTranspose2d(128, 128, 2, stride=2)
-        self.upconv1 = nn.ConvTranspose2d(64, 64, 2, stride=2)
+        self.upconv4 = nn.ConvTranspose2d(self.num_params[3], self.num_params[3], 2, stride=2)
+        self.upconv3 = nn.ConvTranspose2d(self.num_params[2], self.num_params[2], 2, stride=2)
+        self.upconv2 = nn.ConvTranspose2d(self.num_params[1], self.num_params[1], 2, stride=2)
+        self.upconv1 = nn.ConvTranspose2d(self.num_params[0], self.num_params[0], 2, stride=2)
 
     def conv_block(self, in_channels, out_channels, dropout_prob):
         """A convolutional block consists of two convolutional layers
@@ -230,7 +232,7 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
         # Placeholder to save loss
         losses = []
 
-        # Iterate over batches
+        # Iterate over batches (image)
         for batch, _ in train_loader:
             # Send to device
             batch = batch.to(device, non_blocking=True)
@@ -249,14 +251,14 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
             # Compute loss
             loss = utils.loss_function(predicted_noise, noise)
 
-            # Clean up gradients from the model.
-            optimizer.zero_grad()
-
             # Compute gradients based on the loss from the current batch (backpropagation).
             loss.backward()
-
+            
             # Take one optimizer step using the gradients computed in the previous step.
             optimizer.step()
+
+            # Clean up gradients from the model.
+            optimizer.zero_grad()
 
             # Save the loss
             losses.append(loss.item())
