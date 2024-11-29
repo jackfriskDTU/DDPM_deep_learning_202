@@ -3,6 +3,7 @@ from omegaconf import DictConfig
 
 import sys
 import torch
+import random
 
 from model import UNet, train_model
 from utils import set_project_root, init_weights, get_optimizer, loss_function
@@ -28,16 +29,23 @@ def main(cfg: DictConfig):
     seed = cfg.model.seed
 
     # Define the training parameters
+    train_size = cfg.training.train_size
+    test_size = cfg.training.test_size
+    optimizer = cfg.training.optimizer
+    weight_decay = float(cfg.training.weight_decay)
     learning_rate = cfg.training.learning_rate
+    lr_scheduler = cfg.training.lr_scheduler
     batch_size = cfg.training.batch_size
     epochs = cfg.training.epochs
     beta_lower = cfg.training.beta_lower
     beta_upper = cfg.training.beta_upper
+    early_stopping = cfg.training.early_stopping
+
+    torch.manual_seed(seed)
+    random.seed(seed)
 
     # Define the device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    torch.manual_seed(seed)
 
     # initialize the U-net model
     model = UNet(in_channels, out_channels)
@@ -47,18 +55,31 @@ def main(cfg: DictConfig):
         model.apply(init_weights)
 
         # Load the training data
-        train, _ = Preprocess.preprocess_dataset(batch_size, dataset)
+        train, test = Preprocess.preprocess_dataset(batch_size, dataset, train_size, test_size)
 
         # Train the model
-        train_model(train, model, device, time_dim, beta_lower, beta_upper, learning_rate, epochs, batch_size)       
+        train_model(train, test, model, device, time_dim, beta_lower, beta_upper,\
+                     learning_rate, lr_scheduler, epochs, batch_size, early_stopping,\
+                         optimizer, weight_decay)       
         
-        torch.save(model.state_dict(), f'model_weights/main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}.pt')
+        print(f"Saving model weights to main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt")
+        torch.save(model.state_dict(),\
+                    f'model_weights/main_{early_stopping}_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt')
 
     if mode_sample:
-        # Load the model weights
-        model.load_state_dict(torch.load(f'model_weights/main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}.pt',
-                                         map_location=torch.device('cuda:0'),
+        if early_stopping:
+            print(f"predicting with es_{learning_rate}_{batch_size}_{epochs}.pt")
+            model.load_state_dict(torch.load(f'model_weights/es_{learning_rate}_{batch_size}_{epochs}.pt',
+                                         map_location=torch.device('cuda'),
                                          weights_only=True))
+
+        else:
+            print(f"predicting with main_{learning_rate}_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt")
+            # Load the model weights
+            model.load_state_dict(torch.load(\
+                f'model_weights/main_{early_stopping}_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt',
+                                        map_location=torch.device('cuda'),
+                                        weights_only=True))
         model.eval()
 
         betas = torch.linspace(beta_lower, beta_upper, time_dim, device=device)
@@ -66,16 +87,15 @@ def main(cfg: DictConfig):
         if dataset == 'mnist':
             shape = (1, in_channels, 28, 28)
         elif dataset == 'cifar10':
-            shape = (1, in_channels, 64, 64)
+            shape = (1, in_channels, 32, 32)
 
         # Sample from the model
         sampled_img = sample(model, time_dim, betas, shape, device)
         sampled_img = sampled_img[0]
-
-        # Save the image
-        save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_sampled_image.png')
         sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
-        save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_sampled_image_trans.png')
+
+        # Save the sampled image       
+        save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image_trans.png')
 
 if __name__ == "__main__":
     main()
