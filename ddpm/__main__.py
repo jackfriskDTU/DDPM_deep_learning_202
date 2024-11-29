@@ -28,11 +28,14 @@ def main(cfg: DictConfig):
     seed = cfg.model.seed
 
     # Define the training parameters
+    train_size = cfg.training.train_size
+    test_size = cfg.training.test_size
     learning_rate = cfg.training.learning_rate
     batch_size = cfg.training.batch_size
     epochs = cfg.training.epochs
     beta_lower = cfg.training.beta_lower
     beta_upper = cfg.training.beta_upper
+    early_stopping = cfg.training.early_stopping
 
     # Define the device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -47,18 +50,24 @@ def main(cfg: DictConfig):
         model.apply(init_weights)
 
         # Load the training data
-        train, _ = Preprocess.preprocess_dataset(batch_size, dataset)
+        train, test = Preprocess.preprocess_dataset(batch_size, dataset, train_size, test_size)
 
         # Train the model
-        train_model(train, model, device, time_dim, beta_lower, beta_upper, learning_rate, epochs, batch_size)       
+        train_model(train, test, model, device, time_dim, beta_lower, beta_upper, learning_rate, epochs, batch_size, early_stopping)       
         
         torch.save(model.state_dict(), f'model_weights/main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}.pt')
 
     if mode_sample:
-        # Load the model weights
-        model.load_state_dict(torch.load(f'model_weights/main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}.pt',
-                                         map_location=torch.device('cuda:0'),
+        if early_stopping:
+            model.load_state_dict(torch.load(f'model_weights/best_es_model.pt',
+                                         map_location=torch.device('cuda'),
                                          weights_only=True))
+
+        else:
+            # Load the model weights
+            model.load_state_dict(torch.load(f'model_weights/main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}.pt',
+                                            map_location=torch.device('cuda'),
+                                            weights_only=True))
         model.eval()
 
         betas = torch.linspace(beta_lower, beta_upper, time_dim, device=device)
@@ -66,16 +75,21 @@ def main(cfg: DictConfig):
         if dataset == 'mnist':
             shape = (1, in_channels, 28, 28)
         elif dataset == 'cifar10':
-            shape = (1, in_channels, 64, 64)
+            shape = (1, in_channels, 32, 32)
 
         # Sample from the model
         sampled_img = sample(model, time_dim, betas, shape, device)
         sampled_img = sampled_img[0]
 
-        # Save the image
-        save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_sampled_image.png')
-        sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
-        save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_sampled_image_trans.png')
+        
+        if early_stopping:
+            sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
+            save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'best_es_sampled_image')
+        else:
+            # Save the image
+            save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_sampled_image.png')
+            sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
+            save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_sampled_image_trans.png')
 
 if __name__ == "__main__":
     main()
