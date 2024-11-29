@@ -205,6 +205,9 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
     # Move to device
     #model.to(device)
 
+    # patience
+    patience = 10
+
     # Initiate best_loss
     best_loss = float("inf")
 
@@ -261,7 +264,7 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
         # Compute the average loss for the epoch
         train_loss = sum(losses) / len(losses)
 
-       # Validation phase
+       # test phase
         model.eval()
         test_loss = []
         with torch.no_grad():
@@ -278,19 +281,23 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
 
         test_loss = sum(test_loss) / len(test_loss)
 
-        print(f'Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}')
+        print(f'Epoch {epoch+1}/{num_epochs}, \
+              Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, \
+                diff: {train_loss - test_loss:.4f}, best_loss: {best_loss:.4f}')
 
     # Save the model if the validation loss is the best we've seen so far
     # Early stopping
         if early_stopping and test_loss < best_loss:
             best_loss = test_loss
             best_epoch = epoch
-            torch.save(model.state_dict(), 'model_weights/best_es_model.pt')
+            torch.save(model.state_dict(), f'model_weights/es_{learning_rate}_{batch_size}_{num_epochs}.pt')
 
-        elif epoch - best_epoch > 10:
-            print(f'Validation loss has not improved for 10 epochs. Best loss: {best_loss:.4f} at epoch {best_epoch}')
-
-
+        elif epoch - best_epoch > 0.1 * num_epochs:
+            print(f'Validation loss has not improved for 10 epochs. Best loss: {best_loss:.4f} at epoch {best_epoch+1}')
+            patience -= 1
+            if patience == 0:
+                print('Early stopping')
+                break
 
     print("Finished training.")
     return losses
