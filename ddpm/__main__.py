@@ -73,9 +73,9 @@ def main(cfg: DictConfig):
         sampled_img = sampled_img[0]
 
         # Save the image
-        save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_sampled_image.png')
+        save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_sampled_image.png')
         sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
-        save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_sampled_image_trans.png')
+        save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_sampled_image_trans.png')
 
 if __name__ == "__main__":
     main()
