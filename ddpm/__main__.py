@@ -37,6 +37,7 @@ def main(cfg: DictConfig):
     beta_lower = cfg.training.beta_lower
     beta_upper = cfg.training.beta_upper
     early_stopping = cfg.training.early_stopping
+    weight_decay = float(cfg.training.weight_decay)
 
     torch.manual_seed(seed)
     random.seed(seed)
@@ -56,11 +57,11 @@ def main(cfg: DictConfig):
 
         # Train the model
         train_model(train, test, model, device, time_dim, beta_lower, beta_upper,\
-                     learning_rate, epochs, batch_size, early_stopping)       
+                     learning_rate, epochs, batch_size, early_stopping, weight_decay)       
         
-        print(f"Saving model weights to main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}.pt")
+        print(f"Saving model weights to main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt")
         torch.save(model.state_dict(),\
-                    f'model_weights/main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}.pt')
+                    f'model_weights/main_{early_stopping}_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt')
 
     if mode_sample:
         if early_stopping:
@@ -70,10 +71,10 @@ def main(cfg: DictConfig):
                                          weights_only=True))
 
         else:
-            print(f"predicting with main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}.pt")
+            print(f"predicting with main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt")
             # Load the model weights
             model.load_state_dict(torch.load(\
-                f'model_weights/main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}.pt',
+                f'model_weights/main_{early_stopping}_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt',
                                         map_location=torch.device('cuda'),
                                         weights_only=True))
         model.eval()
@@ -92,11 +93,11 @@ def main(cfg: DictConfig):
         
         if early_stopping:
             sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
-            save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'es_{learning_rate}_{batch_size}_{epochs}.png')
+            save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'es_{learning_rate}_{batch_size}_{epochs}_{weight_decay}.png')
         else:
             # Save the image
             sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
-            save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_sampled_image_trans.png')
+            save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image_trans.png')
 
 if __name__ == "__main__":
     main()

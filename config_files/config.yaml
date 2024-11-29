@@ -15,9 +15,10 @@ model:
 training:
   train_size: 10000
   test_size: 100
-  learning_rate: 0.001
+  learning_rate: 0.0001
   batch_size: 50
-  epochs: 10
+  epochs: 1000
   beta_lower: 0.0001 
   beta_upper: 0.02
-  early_stopping: False
+  early_stopping: true
+  weight_decay: 1e-2

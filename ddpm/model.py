@@ -203,7 +203,7 @@ class UNet(nn.Module):
 
         return output
 
-def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-4, beta_upper=0.02, learning_rate=1e-3, num_epochs=4, batch_size = 64, early_stopping=False):
+def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-4, beta_upper=0.02, learning_rate=1e-3, num_epochs=4, batch_size = 64, early_stopping=False, weight_decay=0.0):
     # Move to device
     #model.to(device)
 
@@ -220,7 +220,7 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
     betas = torch.linspace(beta_lower, beta_upper, T, device=device)
 
     # Get the optimizer
-    optimizer = utils.get_optimizer(model, learning_rate)
+    optimizer = utils.get_optimizer(model, learning_rate, weight_decay=weight_decay)
 
     # Set the model to training mode
     model.train()
