@@ -58,6 +58,7 @@ def main(cfg: DictConfig):
         train_model(train, test, model, device, time_dim, beta_lower, beta_upper,\
                      learning_rate, epochs, batch_size, early_stopping)       
         
+        print(f"Saving model weights to main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}.pt")
         torch.save(model.state_dict(),\
                     f'model_weights/main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}.pt')
 
