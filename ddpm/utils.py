@@ -34,12 +34,12 @@ def loss_function(predicted_noise, noise):
     # Compute MSE loss between predicted noise and true noise
     return nn.MSELoss()(predicted_noise, noise)
 
-def get_optimizer(model, learning_rate=1e-3):
+def get_optimizer(model, learning_rate=1e-3, weight_decay=0):
     """
     Returns an Adam optimizer with the learning rate specified in the config file.
     """
 
     # Create an Adam optimizer
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
 
     return optimizer
