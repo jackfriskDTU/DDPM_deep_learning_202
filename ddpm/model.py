@@ -43,11 +43,17 @@ class UNet(nn.Module):
     def __init__(self, in_channels, out_channels, dropout_prob=0.1):
         super(UNet, self).__init__()
 
+        # If MNIST
+        if in_channels == 1:
+            self.image_shape = 28
+        else:
+            self.image_shape = 32
+
         # List of values for the number of parameters in each layer
         self.num_params = [32, 64, 128, 256]
 
         # Linear layer to project time embedding to match input channels
-        self.time_linear_in = nn.Linear(32, 3) # MNIST shapes
+        self.time_linear_in = nn.Linear(self.image_shape, in_channels)
         self.time_linear_1 = nn.Linear(self.num_params[0], self.num_params[0])
         self.time_linear_2 = nn.Linear(self.num_params[1], self.num_params[1])
         self.time_linear_3 = nn.Linear(self.num_params[2], self.num_params[2])
@@ -113,7 +119,7 @@ class UNet(nn.Module):
         Verbose mode prints the shape of intermediate tensors."""
         
         # Generate sinusoidal time embeddings
-        time_emb_in = self.sinusoidal_embedding(t, 32)
+        time_emb_in = self.sinusoidal_embedding(t, self.image_shape)
         time_emb_in = self.time_linear_in(time_emb_in).unsqueeze(-1).unsqueeze(-1)
         time_emb_1 = self.sinusoidal_embedding(t, self.num_params[0])
         time_emb_1 = self.time_linear_1(time_emb_1).unsqueeze(-1).unsqueeze(-1)
@@ -269,8 +275,8 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
             print(f'Validation loss improved. Saving model weights to model_weights/es_{learning_rate}_{batch_size}_{num_epochs}.pt')
             torch.save(model.state_dict(), f'model_weights/es_{learning_rate}_{batch_size}_{num_epochs}.pt')
 
-        elif epoch - best_epoch > 0.1 * num_epochs:
-            print(f'Validation loss has not improved for 10 epochs. Best loss: {best_loss:.4f} at epoch {best_epoch+1}')
+        elif early_stopping and (epoch - best_epoch > 0.6 * num_epochs):
+            print(f'Validation loss has not improved for {0.6 * num_epochs} epochs. Best loss: {best_loss:.4f} at epoch {best_epoch+1}')
             patience -= 1
             if patience == 0:
                 print('Early stopping')
