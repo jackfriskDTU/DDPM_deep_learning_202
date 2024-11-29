@@ -3,6 +3,7 @@ import torch.nn as nn
 
 import sys
 import utils
+import math
 from preprocess import *
 from forward_process import *
 
@@ -44,23 +45,24 @@ class UNet(nn.Module):
 
         # List of values for the number of parameters in each layer
         self.num_params = [32, 64, 128, 256]
+
+        # Linear layer to project time embedding to match input channels
+        self.time_linear_in = nn.Linear(32, 3) # MNIST shapes
+        self.time_linear_1 = nn.Linear(self.num_params[0], self.num_params[0])
+        self.time_linear_2 = nn.Linear(self.num_params[1], self.num_params[1])
+        self.time_linear_3 = nn.Linear(self.num_params[2], self.num_params[2])
+        self.time_linear_4 = nn.Linear(self.num_params[3], self.num_params[3])
         
         # conv_block consists of two convolutional layers followed by ReLU activations.
-        # Adding +1 to the in_channels to account for the time dimension.
-        self.encoder1 = self.conv_block(in_channels + 1, self.num_params[0], dropout_prob)
-        self.encoder2 = self.conv_block(self.num_params[0] + 1, self.num_params[1], dropout_prob)
-        self.encoder3 = self.conv_block(self.num_params[1] + 1, self.num_params[2], dropout_prob)
-        self.encoder4 = self.conv_block(self.num_params[2] + 1, self.num_params[3], dropout_prob)
-        
-        # This line defines a linear layer to embed the time dimension into a 512-dimensional vector.
-        # self.time_embed_layer_4 = nn.Linear(1, 512)
-        # self.time_embed_layer_3 = nn.Linear(1, self.num_params[2])
-        
+        self.encoder1 = self.conv_block(in_channels, self.num_params[0], dropout_prob)
+        self.encoder2 = self.conv_block(self.num_params[0], self.num_params[1], dropout_prob)
+        self.encoder3 = self.conv_block(self.num_params[1], self.num_params[2], dropout_prob)
+        self.encoder4 = self.conv_block(self.num_params[2], self.num_params[3], dropout_prob)
+               
         # The decoder consists of four conv_block layers followed by a final convolutional layer to output the final image.
-        # Adding +1 to the in_channels to account for the time dimension.
-        self.decoder4 = self.conv_block(self.num_params[3] + self.num_params[2] + 2, self.num_params[2], dropout_prob)
-        self.decoder3 = self.conv_block(self.num_params[2] + self.num_params[1] + 2, self.num_params[1], dropout_prob)
-        self.decoder2 = self.conv_block(self.num_params[1] + self.num_params[0] + 2, self.num_params[0], dropout_prob)
+        self.decoder4 = self.conv_block(self.num_params[3] + self.num_params[2], self.num_params[2], dropout_prob)
+        self.decoder3 = self.conv_block(self.num_params[2] + self.num_params[1], self.num_params[1], dropout_prob)
+        self.decoder2 = self.conv_block(self.num_params[1] + self.num_params[0], self.num_params[0], dropout_prob)
         self.decoder1 = nn.Sequential(
             nn.Conv2d(self.num_params[0], out_channels, kernel_size=1),
             nn.BatchNorm2d(out_channels)#,
@@ -69,7 +71,6 @@ class UNet(nn.Module):
         
         # The pooling layer downsamples the input by a factor of 2.
         # The upconvolutional layer upsamples the input by a factor of 2.
-        # Adding +1 to the in_channels to account for the time dimension.
         self.pool = nn.MaxPool2d(2)
         self.upconv4 = nn.ConvTranspose2d(self.num_params[3], self.num_params[3], 2, stride=2)
         self.upconv3 = nn.ConvTranspose2d(self.num_params[2], self.num_params[2], 2, stride=2)
@@ -90,42 +91,55 @@ class UNet(nn.Module):
             nn.Dropout(dropout_prob)
         )
     
-    def add_timestep(self, x, t, batch_size):
-        """Add timestep information to the input tensor."""
-        t = t.view(batch_size, 1, 1, 1)
-        t = t.expand(-1 , 1, x.size(2), x.size(3))
-
-        return torch.cat([x, t], dim=1)
+    def sinusoidal_embedding(self, t, embed_dim):
+        """
+        Generates sinusoidal embeddings for the time step.
+        Args:
+            t (torch.Tensor): Input tensor of shape (batch_size,).
+            embed_dim (int): Dimensionality of the embedding.
+        Returns:
+            torch.Tensor: Sinusoidal embeddings of shape (batch_size, embed_dim).
+        """
+        device = t.device
+        half_dim = embed_dim // 2
+        emb = math.log(10000) / (half_dim - 1)
+        emb = torch.exp(torch.arange(half_dim, device=device) * -emb)
+        emb = t[:, None] * emb[None, :]
+        emb = torch.cat([torch.sin(emb), torch.cos(emb)], dim=-1)
+        return emb
 
     def forward(self, x, t, verbose=False, layers=3):
         """Forward pass of the U-Net model.
         Verbose mode prints the shape of intermediate tensors."""
         
-        # Unsqueeze the time embedding to match the dimensions of the last encoding level
-        # while len(t.shape) < len(x.shape):
-        #     t = t.unsqueeze(1).float()
+        # Generate sinusoidal time embeddings
+        time_emb_in = self.sinusoidal_embedding(t, 32)
+        time_emb_in = self.time_linear_in(time_emb_in).unsqueeze(-1).unsqueeze(-1)
+        time_emb_1 = self.sinusoidal_embedding(t, self.num_params[0])
+        time_emb_1 = self.time_linear_1(time_emb_1).unsqueeze(-1).unsqueeze(-1)
+        time_emb_2 = self.sinusoidal_embedding(t, self.num_params[1])
+        time_emb_2 = self.time_linear_2(time_emb_2).unsqueeze(-1).unsqueeze(-1)
+        time_emb_3 = self.sinusoidal_embedding(t, self.num_params[2])
+        time_emb_3 = self.time_linear_3(time_emb_3).unsqueeze(-1).unsqueeze(-1)
+        time_emb_4 = self.sinusoidal_embedding(t, self.num_params[3])
+        time_emb_4 = self.time_linear_4(time_emb_4).unsqueeze(-1).unsqueeze(-1)
 
-        # Concatenate the time embedding as an additional channel
-        x = self.add_timestep(x, t, x.size(0))
+        x = x + time_emb_in
 
         if layers == 3:
             enc1 = self.encoder1(x)
-            enc1 = self.add_timestep(enc1, t, enc1.size(0))
+            enc1 = enc1 + time_emb_1
             enc2 = self.encoder2(self.pool(enc1))
-            enc2 = self.add_timestep(enc2, t, enc2.size(0))
+            enc2 = enc2 + time_emb_2
             bottleneck = self.encoder3(self.pool(enc2))
 
             bottleneck_upconv = self.upconv3(bottleneck)
             bottleneck_upconv = torch.cat((bottleneck_upconv, enc2), dim=1)
-            bottleneck_upconv = self.add_timestep(bottleneck_upconv, t, bottleneck_upconv.size(0))
             dec2 = self.decoder3(bottleneck_upconv)
             
             dec2_upconv = self.upconv2(dec2)
             dec2_upconv = torch.cat((dec2_upconv, enc1), dim=1)
-            dec2_upconv = self.add_timestep(dec2_upconv, t, dec2_upconv.size(0))
             dec1 = self.decoder2(dec2_upconv)
-            # We do not add timestep in the 1x1 conv, should we?
-            #dec1 = self.add_timestep(dec1, t, dec1.size(0))
             output = self.decoder1(dec1)
 
         elif layers == 4:
@@ -143,50 +157,6 @@ class UNet(nn.Module):
             dec1 = self.decoder2(torch.cat((dec2_upconv, enc1), dim=1))
             output = self.decoder1(dec1)
 
-        
-
-        # Initialize the time embedding
-        # t_emb = self.time_embed_layer_3(t)
-        # t_emb = t_emb.view(t_emb.size(0), t_emb.size(3), 1, 1)
-
-        # enc1 = self.encoder1(x)
-        # enc2 = self.encoder2(self.pool(enc1))
-        # enc3 = self.encoder3(self.pool(enc2))
-        # if (layers == 4):
-        #     enc4 = self.encoder4(self.pool(enc3))
-
-        #     # Embed the time dimension and add it to the output of the fourth encoder block.
-        #     t_emb = self.time_embed_layer_4(t)
-        #     t_emb = t_emb.view(t_emb.size(0), t_emb.size(3), 1, 1)
-
-        #     enc4 = enc4 + t_emb
-        #     dec4 = self.upconv4(enc4)
-        #     dec4 = torch.cat((dec4, enc3), dim=1)
-        #     dec4 = self.decoder4(dec4)
-
-        #     dec3 = self.upconv3(dec4)
-        #     dec3 = torch.cat((dec3, enc2), dim=1)
-        #     dec3 = self.decoder3(dec3)
-        # else:
-        #     enc3 = enc3 + t_emb
-        #     dec3 = self.decoder3(enc3)
-
-        # dec2 = self.upconv2(dec3)
-        # dec2 = torch.cat((dec2, enc1), dim=1)
-        # dec2 = self.decoder2(dec2)
-        
-        # dec1 = self.upconv1(dec2)
-
-        # # Crop dec1 to match the dimensions of x
-        # if dec1.size(2) > x.size(2) or dec1.size(3) > x.size(3):
-        #     #diff_x = dec1.size(2) - x.size(2)
-        #     print('dec1_before.size() =', dec1.size())
-
-        #     dec1 = dec1[:, :, :x.size(2), :x.size(3)]
-        #     print('dec1_after.size() =', dec1.size())
-
-        # dec1 = torch.cat((dec1, x), dim=1)
-        # dec1 = self.decoder1(dec1)
 
         if verbose:
             print('x.size() =', x.size())
