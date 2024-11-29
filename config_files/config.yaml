@@ -13,8 +13,8 @@ model:
   seed: 42
 
 training:
-  learning_rate: 0.0001
-  batch_size: 1
-  epochs: 10000
+  learning_rate: 0.003
+  batch_size: 64
+  epochs: 25
   beta_lower: 0.0001 
   beta_upper: 0.02

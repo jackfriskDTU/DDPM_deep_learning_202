@@ -5,6 +5,8 @@ from torch.utils.data import DataLoader, TensorDataset, Subset
 from torchvision import datasets,transforms
 from PIL import Image
 
+import matplotlib.pyplot as plt
+
 import sys
 from forward_process import add_noise
 
@@ -18,14 +20,6 @@ class Preprocess:
             test_dataset = datasets.CIFAR10(root='../data', train=False, download=True, transform=transforms.ToTensor())
         else:
             raise ValueError(f"Dataset {dataset} not supported. Choose 'mnist' or 'cifar10'")
-
-        test_data = train_dataset[0]
-        test_img, test_label = test_data
-        # print('test_img.shape:')
-        # print(test_img.shape)
-
-        # print('test_img')
-        # print(test_img)
 
         # create subsets
         train_dataset = Subset(train_dataset, np.arange(0, 6400))
@@ -131,6 +125,19 @@ def save_image(image_tensor, save_dir, filename=None, index=0):
 if __name__ == '__main__':
     train_loader, test_loader = Preprocess.preprocess_dataset(64, 'mnist')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    # Fetch all the labels and plot the distribution
+    labels_train = [label for _, label in train_loader.dataset]
+    labels_test = [label for _, label in test_loader.dataset]
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plt.hist(labels_train, bins=10, color='blue', alpha=0.7)
+    plt.title('Train labels distribution')
+
+    plt.subplot(1, 2, 2)
+    plt.hist(labels_test, bins=10, color='red', alpha=0.7)
+    plt.title('Test labels distribution')
+    plt.savefig('saved_images_mnist/labels_distribution.png')
 
     # Get a sample image and label
     fst_img, _ = train_loader.dataset[0]
