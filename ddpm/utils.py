@@ -1,6 +1,7 @@
 from pathlib import Path
 from torch import nn
 from torch import optim
+from torch.optim.lr_scheduler import StepLR, ExponentialLR, ReduceLROnPlateau, CosineAnnealingLR
 
 # Define the project root directory
 PROJECT_ROOT = Path(__file__).resolve()
@@ -34,12 +35,46 @@ def loss_function(predicted_noise, noise):
     # Compute MSE loss between predicted noise and true noise
     return nn.MSELoss()(predicted_noise, noise)
 
-def get_optimizer(model, learning_rate=1e-3, weight_decay=0):
+def get_optimizer(model, optimizer_type = "Adam", learning_rate=1e-3, weight_decay=0):
     """
     Returns an Adam optimizer with the learning rate specified in the config file.
     """
 
-    # Create an Adam optimizer
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    if optimizer_type == 'Adam':
+        optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    elif optimizer_type == 'SGD':
+        optimizer = optim.SGD(model.parameters(), lr=learning_rate, weight_decay=weight_decay, momentum=0.9)
 
     return optimizer
+
+def get_scheduler(optimizer, scheduler_type):
+    """
+    Create a learning rate scheduler for the given optimizer.
+
+    Args:
+        optimizer: The optimizer for which to create the scheduler.
+        scheduler_config (string): type of learning rate scheduler.
+
+    Returns:
+        scheduler: The learning rate scheduler.
+    """
+    if scheduler_type == 'StepLR':
+        scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
+    elif scheduler_type == 'ExponentialLR':
+        scheduler = ExponentialLR(optimizer, gamma=0.9)
+    elif scheduler_type == 'ReduceLROnPlateau':
+        scheduler = ReduceLROnPlateau(
+            optimizer,
+            mode="min",
+            factor=0.5,
+            patience=5,
+            verbose=True
+        )
+    elif scheduler_type == 'CosineAnnealingLR':
+        scheduler = CosineAnnealingLR(
+            optimizer,
+            T_max=50,
+            eta_min=1e-6
+        )
+    
+    return scheduler

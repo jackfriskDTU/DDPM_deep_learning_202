@@ -203,7 +203,7 @@ class UNet(nn.Module):
 
         return output
 
-def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-4, beta_upper=0.02, learning_rate=1e-3, num_epochs=4, batch_size = 64, early_stopping=False, weight_decay=0.0):
+def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-4, beta_upper=0.02, learning_rate=1e-3, lr_scheduler = "StepLR", num_epochs=4, batch_size = 64, early_stopping=False, optimizer = "Adam", weight_decay=0.0):
     # Move to device
     #model.to(device)
 
@@ -220,15 +220,19 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
     betas = torch.linspace(beta_lower, beta_upper, T, device=device)
 
     # Get the optimizer
-    optimizer = utils.get_optimizer(model, learning_rate, weight_decay=weight_decay)
+    optimizer = utils.get_optimizer(model, optimizer, learning_rate, weight_decay=weight_decay)
 
-    # Set the model to training mode
-    model.train()
+    lr_scheduler = utils.get_scheduler(optimizer, lr_scheduler)
+
+
 
 
 
     # Start training
     for epoch in range(num_epochs):
+        # Set the model to training mode
+        model.train()
+
         # Placeholder to save loss
         losses = []
 
@@ -236,6 +240,9 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
         for batch, _ in train_loader:
             # Send to device
             batch = batch.to(device, non_blocking=True)
+
+            # Clean up gradients from the model.
+            optimizer.zero_grad()
 
             # Generate random timesteps for each image in the batch
             t = torch.randint(0, T, (batch_size,), device=device)
@@ -256,9 +263,6 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
             
             # Take one optimizer step using the gradients computed in the previous step.
             optimizer.step()
-
-            # Clean up gradients from the model.
-            optimizer.zero_grad()
 
             # Save the loss
             losses.append(loss.item())
@@ -301,6 +305,11 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
             if patience == 0:
                 print('Early stopping')
                 break
+
+        if lr_scheduler == "ReduceLROnPlateau":
+            lr_scheduler.step(test_loss)
+        else:
+            lr_scheduler.step()
 
     print("Finished training.")
     return losses

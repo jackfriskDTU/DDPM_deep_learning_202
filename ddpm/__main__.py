@@ -31,13 +31,15 @@ def main(cfg: DictConfig):
     # Define the training parameters
     train_size = cfg.training.train_size
     test_size = cfg.training.test_size
+    optimizer = cfg.training.optimizer
+    weight_decay = float(cfg.training.weight_decay)
     learning_rate = cfg.training.learning_rate
+    lr_scheduler = cfg.training.lr_scheduler
     batch_size = cfg.training.batch_size
     epochs = cfg.training.epochs
     beta_lower = cfg.training.beta_lower
     beta_upper = cfg.training.beta_upper
     early_stopping = cfg.training.early_stopping
-    weight_decay = float(cfg.training.weight_decay)
 
     torch.manual_seed(seed)
     random.seed(seed)
@@ -57,7 +59,8 @@ def main(cfg: DictConfig):
 
         # Train the model
         train_model(train, test, model, device, time_dim, beta_lower, beta_upper,\
-                     learning_rate, epochs, batch_size, early_stopping, weight_decay)       
+                     learning_rate, lr_scheduler, epochs, batch_size, early_stopping,\
+                         optimizer, weight_decay)       
         
         print(f"Saving model weights to main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt")
         torch.save(model.state_dict(),\
