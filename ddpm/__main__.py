@@ -71,7 +71,7 @@ def main(cfg: DictConfig):
                                          weights_only=True))
 
         else:
-            print(f"predicting with main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt")
+            print(f"predicting with main_{learning_rate}_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt")
             # Load the model weights
             model.load_state_dict(torch.load(\
                 f'model_weights/main_{early_stopping}_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt',
@@ -89,15 +89,10 @@ def main(cfg: DictConfig):
         # Sample from the model
         sampled_img = sample(model, time_dim, betas, shape, device)
         sampled_img = sampled_img[0]
+        sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 
-        
-        if early_stopping:
-            sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
-            save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'es_{learning_rate}_{batch_size}_{epochs}_{weight_decay}.png')
-        else:
-            # Save the image
-            sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
-            save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image_trans.png')
+        # Save the sampled image       
+        save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image_trans.png')
 
 if __name__ == "__main__":
     main()
