@@ -5,6 +5,8 @@ import sys
 import torch
 import random
 
+import neptune
+
 from model import UNet, train_model
 from utils import set_project_root, init_weights, get_optimizer, loss_function
 from preprocess import Preprocess, save_image, transform_range
@@ -40,9 +42,18 @@ def main(cfg: DictConfig):
     beta_lower = cfg.training.beta_lower
     beta_upper = cfg.training.beta_upper
     early_stopping = cfg.training.early_stopping
+    neptune_log = cfg.training.neptune
 
     torch.manual_seed(seed)
     random.seed(seed)
+
+    # Initialize Neptune
+    run = None
+    if neptune_log:
+        run = neptune.init_run(
+        project="s194527/DDPM",
+        api_token="eyJhcGlfYWRkcmVzcyI6Imh0dHBzOi8vYXBwLm5lcHR1bmUuYWkiLCJhcGlfdXJsIjoiaHR0cHM6Ly9hcHAubmVwdHVuZS5haSIsImFwaV9rZXkiOiI3ZTA1YjFjNS1hNDdmLTQ3OTktOWIxMi01YjNhMWI3NGNmMGEifQ==",
+    ) 
 
     # Define the device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -60,7 +71,7 @@ def main(cfg: DictConfig):
         # Train the model
         train_model(train, test, model, device, time_dim, beta_lower, beta_upper,\
                      learning_rate, lr_scheduler, epochs, batch_size, early_stopping,\
-                         optimizer, weight_decay)       
+                         optimizer, weight_decay, run)       
         
         print(f"Saving model weights to main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt")
         torch.save(model.state_dict(),\

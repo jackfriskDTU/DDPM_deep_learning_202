@@ -179,9 +179,19 @@ class UNet(nn.Module):
 
         return output
 
-def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-4, beta_upper=0.02, learning_rate=1e-3, lr_scheduler = "StepLR", num_epochs=4, batch_size = 64, early_stopping=False, optimizer = "Adam", weight_decay=0.0):
+def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-4, beta_upper=0.02, learning_rate=1e-3, lr_scheduler = "StepLR", num_epochs=4, batch_size = 64, early_stopping=False, optimizer = "Adam", weight_decay=0.0, neptune_log=False):
     # Move to device
     #model.to(device)
+
+    if neptune_log:
+        params = {"learning_rate": learning_rate,
+                "lr_scheduler": lr_scheduler,
+                "optimizer": optimizer,
+                "weight_decay": weight_decay,
+                "num_epochs": num_epochs,
+                "batch_size": batch_size,
+                }
+        neptune_log["parameters"] = params
 
     # patience
     patience = 10
@@ -245,6 +255,9 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
 
         # Compute the average loss for the epoch
         train_loss = sum(losses) / len(losses)
+        
+        if neptune_log:
+            neptune_log["train/loss"].log(train_loss)
 
        # test phase
         model.eval()
@@ -262,6 +275,9 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
                 test_loss.append(loss.item())
 
         test_loss = sum(test_loss) / len(test_loss)
+        
+        if neptune_log:
+            neptune_log["test/loss"].log(test_loss)
 
         print(f'Epoch {epoch+1}/{num_epochs}, \
               Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, \
@@ -274,6 +290,9 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
             best_epoch = epoch
             print(f'Validation loss improved. Saving model weights to model_weights/es_{learning_rate}_{batch_size}_{num_epochs}.pt')
             torch.save(model.state_dict(), f'model_weights/es_{learning_rate}_{batch_size}_{num_epochs}.pt')
+            
+            if neptune_log:
+                neptune_log["model/best_model"].upload('best_model.pt')
 
         elif early_stopping and (epoch - best_epoch > 0.6 * num_epochs):
             print(f'Validation loss has not improved for {0.6 * num_epochs} epochs. Best loss: {best_loss:.4f} at epoch {best_epoch+1}')
@@ -284,10 +303,14 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
 
         if lr_scheduler == "ReduceLROnPlateau":
             lr_scheduler.step(test_loss)
-        else:
+        elif lr_scheduler != None:
             lr_scheduler.step()
 
     print("Finished training.")
+
+    if neptune_log:
+        neptune_log.stop()
+
     return losses
 
 if __name__ == '__main__':
