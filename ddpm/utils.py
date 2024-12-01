@@ -56,7 +56,7 @@ def get_scheduler(optimizer, scheduler_type):
         scheduler_config (string): type of learning rate scheduler.
 
     Returns:
-        scheduler: The learning rate scheduler.
+        scheduler: The learning rate scheduler or None if no scheduler is selected.
     """
     if scheduler_type == 'StepLR':
         scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
@@ -76,5 +76,7 @@ def get_scheduler(optimizer, scheduler_type):
             T_max=50,
             eta_min=1e-6
         )
+    elif scheduler_type == 'None':
+        scheduler = None
     
     return scheduler
