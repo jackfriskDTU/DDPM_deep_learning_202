@@ -1,4 +1,4 @@
-name: ddpm_env
+name: /work3/s194527/02456-deep-learning-with-PyTorch/miniconda3/envs/ddpm_env
 channels:
   - defaults
 dependencies:
@@ -150,7 +150,6 @@ dependencies:
   - tornado=6.4.1=py310h5eee18b_0
   - traitlets=5.14.3=py310h06a4308_0
   - typing_extensions=4.11.0=py310h06a4308_0
-  - tzdata=2024b=h04d1e81_0
   - urllib3=2.2.3=py310h06a4308_0
   - wcwidth=0.2.5=pyhd3eb1b0_0
   - webencodings=0.5.1=py310h06a4308_1
@@ -164,16 +163,34 @@ dependencies:
   - zstd=1.5.6=hc292b87_0
   - pip:
       - antlr4-python3-runtime==4.9.3
+      - arrow==1.3.0
+      - boto3==1.35.71
+      - botocore==1.35.71
+      - bravado==11.0.3
+      - bravado-core==6.1.1
+      - click==8.1.7
       - contourpy==1.3.1
       - cycler==0.12.1
       - filelock==3.16.1
       - fonttools==4.55.0
+      - fqdn==1.5.1
       - fsspec==2024.10.0
+      - future==1.0.0
+      - gitdb==4.0.11
+      - gitpython==3.1.43
       - hydra-core==1.3.2
+      - importlib-resources==6.4.5
+      - isoduration==20.11.0
+      - jmespath==1.0.1
+      - jsonpointer==3.0.0
+      - jsonref==1.1.0
       - kiwisolver==1.4.7
       - markupsafe==3.0.2
       - matplotlib==3.9.2
+      - monotonic==1.6
       - mpmath==1.3.0
+      - msgpack==1.1.0
+      - neptune==1.13.0
       - networkx==3.4.2
       - numpy==2.1.3
       - nvidia-cublas-cu12==12.4.5.8
@@ -188,14 +205,26 @@ dependencies:
       - nvidia-nccl-cu12==2.21.5
       - nvidia-nvjitlink-cu12==12.4.127
       - nvidia-nvtx-cu12==12.4.127
+      - oauthlib==3.2.2
       - omegaconf==2.3.0
       - packaging==24.2
+      - pandas==2.2.3
       - pillow==11.0.0
+      - pyjwt==2.10.1
       - pyparsing==3.2.0
+      - requests-oauthlib==2.0.0
+      - s3transfer==0.10.4
+      - simplejson==3.19.3
+      - smmap==5.0.1
+      - swagger-spec-validator==3.0.4
       - sympy==1.13.1
       - torch==2.5.1
       - torchaudio==2.5.1
       - torchvision==0.20.1
       - triton==3.1.0
+      - types-python-dateutil==2.9.0.20241003
       - typing-extensions==4.12.2
+      - tzdata==2024.2
+      - uri-template==1.3.0
+      - webcolors==24.11.1
 prefix: /work3/s194527/02456-deep-learning-with-PyTorch/miniconda3/envs/ddpm_env
