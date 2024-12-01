@@ -294,6 +294,7 @@ def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-
             if neptune_log:
                 neptune_log["model/best_model"].upload('best_model.pt')
 
+        # stop if the test loss is not improving after x percentage of total epochs
         elif early_stopping and (epoch - best_epoch > 0.6 * num_epochs):
             print(f'Validation loss has not improved for {0.6 * num_epochs} epochs. Best loss: {best_loss:.4f} at epoch {best_epoch+1}')
             patience -= 1
