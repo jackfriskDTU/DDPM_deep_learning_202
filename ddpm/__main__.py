@@ -63,7 +63,7 @@ def main(cfg: DictConfig):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # initialize the U-net model
-    model = ScoreNetwork0()
+    model = UNet(in_channels, out_channels, 0)
     model.to(device)
 
     if mode_train:
@@ -73,7 +73,7 @@ def main(cfg: DictConfig):
         train, test = Preprocess.preprocess_dataset(batch_size, dataset, train_size, test_size)
 
         # Train the model
-        train_model0(train, test, model, device, time_dim, beta_lower, beta_upper,\
+        train_model(train, test, model, device, time_dim, beta_lower, beta_upper,\
                      learning_rate, lr_scheduler, epochs, batch_size, early_stopping,\
                          optimizer, weight_decay, run)       
         
@@ -92,7 +92,7 @@ def main(cfg: DictConfig):
             print(f"predicting with main_{learning_rate}_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt")
             # Load the model weights
             model.load_state_dict(torch.load(\
-                f'model_weights/main_{early_stopping}_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt',
+                f'model_weights/main_{early_stopping}_{time_dim}_{5}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt',
                                         map_location=torch.device('cuda'),
                                         weights_only=True))
         model.eval()
