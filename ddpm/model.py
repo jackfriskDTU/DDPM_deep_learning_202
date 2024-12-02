@@ -179,7 +179,21 @@ class UNet(nn.Module):
 
         return output
 
-def train_model(train_loader, test_loader, model, device, T=1000, beta_lower=1e-4, beta_upper=0.02, learning_rate=1e-3, lr_scheduler = "StepLR", num_epochs=4, batch_size = 64, early_stopping=False, optimizer = "Adam", weight_decay=0.0, neptune_log=False):
+def train_model(train_loader,\
+                 test_loader,\
+                   model,\
+                     device,\
+                       T=1000,\
+                         beta_lower=1e-4,\
+                           beta_upper=0.02,\
+                             learning_rate=1e-3,\
+                               lr_scheduler = "StepLR",\
+                                 num_epochs=4,\
+                                   batch_size = 64,\
+                                     early_stopping=False,\
+                                       optimizer = "Adam",\
+                                         weight_decay=0.0,\
+                                           neptune_log=False):
     # Move to device
     #model.to(device)
 
