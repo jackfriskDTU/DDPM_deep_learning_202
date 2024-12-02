@@ -123,9 +123,11 @@ def save_image(image_tensor, save_dir, filename=None, index=0):
         return None
 
 if __name__ == '__main__':
+    ### Load data ###
     train_loader, test_loader = Preprocess.preprocess_dataset(64, 'mnist')
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    ### Visualize label distribution ###
     # Fetch all the labels and plot the distribution
     labels_train = [label for _, label in train_loader.dataset]
     labels_test = [label for _, label in test_loader.dataset]
@@ -137,41 +139,4 @@ if __name__ == '__main__':
     plt.subplot(1, 2, 2)
     plt.hist(labels_test, bins=10, color='red', alpha=0.7)
     plt.title('Test labels distribution')
-    plt.savefig('saved_images_mnist/labels_distribution.png')
-
-    # Get a sample image and label
-    fst_img, _ = train_loader.dataset[0]
-    fst_img.to(device)
-
-    # Save the original image before adding noise
-    fst_img = transform_range(fst_img, fst_img.min(), fst_img.max(), 0, 1)
-    save_image(fst_img, save_dir='saved_images_mnist', filename='original_image.png')
-    
-    # Add batch dimension to fst_img to make it work with add_noise()
-    fst_img = fst_img.unsqueeze(0)
-
-    # Add noise to the image
-    T = 100
-    betas = torch.linspace(1e-4, 0.02, T, device=device)
-
-    for T_t in [1, 2, 5, 10, 50, 99]:
-        t = torch.tensor([T_t], device=device)
-        # Summary stats for fst_img
-        print(f"Image min: {fst_img.min()}, max: {fst_img.max()}, mean: {fst_img.mean()}, std: {fst_img.std()}")
-
-        fst_img_noisy, noise = add_noise(fst_img, betas, t, device=device)
-
-        # Summary stats for fst_img_noisy
-        print(f"Before squeeze: min: {fst_img_noisy.min()}, max: {fst_img_noisy.max()}, mean: {fst_img_noisy.mean()}, std: {fst_img_noisy.std()}")
-
-        # Remove batch dimension and transform to [0,1] range to save the image
-        fst_img_noisy = fst_img_noisy.squeeze(0)
-        print(f"After squeeze: min: {fst_img_noisy.min()}, max: {fst_img_noisy.max()}, mean: {fst_img_noisy.mean()}, std: {fst_img_noisy.std()}")
-        
-        fst_img_noisy_normal = transform_range(fst_img_noisy, fst_img_noisy.min(), fst_img_noisy.max(), 0, 1)
-        print(f"After transform: min: {fst_img_noisy_normal.min()}, max: {fst_img_noisy_normal.max()}, mean: {fst_img_noisy_normal.mean()}, std: {fst_img_noisy_normal.std()}")
-
-
-        # Save the noisy image
-        save_image(fst_img_noisy_normal, save_dir='saved_images_mnist', filename=f'noisy_{T_t}_image.png')
-        #sys.exit(1)
+    plt.savefig('poster/labels_distribution.png')
