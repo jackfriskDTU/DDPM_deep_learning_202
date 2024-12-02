@@ -77,6 +77,10 @@ def main(cfg: DictConfig):
         print(f"Saving model weights to main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt")
         torch.save(model.state_dict(),\
                     f'model_weights/main_{early_stopping}_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt')
+        
+        # Remove train and test from memory
+        del train
+        del test
 
     if mode_sample:
         if early_stopping:
@@ -113,13 +117,13 @@ def main(cfg: DictConfig):
             img = img.permute(1, 2, 0)
             axes[i].imshow(img.detach().cpu().numpy(), cmap='gray')
             axes[i].axis('off')
-        fig.savefig(f'saved_images_{dataset}/{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image.png')
+        fig.savefig(f'saved_images_{dataset}/{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image_group.png')
 
         sampled_img = sampled_img[0]
         sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 
         # Save the sampled image       
-        save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image_trans.png')
+        save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image.png')
 
 if __name__ == "__main__":
     main()
