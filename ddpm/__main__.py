@@ -4,6 +4,7 @@ from omegaconf import DictConfig
 import sys
 import torch
 import random
+import matplotlib.pyplot as plt
 
 import neptune
 
@@ -96,12 +97,24 @@ def main(cfg: DictConfig):
         betas = torch.linspace(beta_lower, beta_upper, time_dim, device=device)
 
         if dataset == 'mnist':
-            shape = (1, in_channels, 28, 28)
+            shape = (10, in_channels, 28, 28)
         elif dataset == 'cifar10':
-            shape = (1, in_channels, 32, 32)
+            shape = (10, in_channels, 32, 32)
 
         # Sample from the model
         sampled_img = sample(model, time_dim, betas, shape, device)
+
+        ten_sample = sampled_img[:10]
+        # Plot the 10 sampled images
+        fig, axes = plt.subplots(1, 10, figsize=(15, 3), squeeze=False)
+        axes = axes[0]
+        for i, img in enumerate(ten_sample):
+            img = transform_range(img, img.min(), img.max(), 0, 1)
+            img = img.permute(1, 2, 0)
+            axes[i].imshow(img.detach().cpu().numpy(), cmap='gray')
+            axes[i].axis('off')
+        fig.savefig(f'saved_images_{dataset}/{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image.png')
+
         sampled_img = sampled_img[0]
         sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 
