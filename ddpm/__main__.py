@@ -14,6 +14,7 @@ from preprocess import Preprocess
 from postprocess import sample_and_plot, save_image, transform_range
 from forward_process import add_noise
 from reverse_process import sample
+from new_u import ScoreNetwork0, train_model0
 
 @hydra.main(config_path = "../config_files", config_name = "config", version_base = None)
 def main(cfg: DictConfig):
@@ -62,7 +63,7 @@ def main(cfg: DictConfig):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # initialize the U-net model
-    model = UNet(in_channels, out_channels)
+    model = ScoreNetwork0()
     model.to(device)
 
     if mode_train:
@@ -72,7 +73,7 @@ def main(cfg: DictConfig):
         train, test = Preprocess.preprocess_dataset(batch_size, dataset, train_size, test_size)
 
         # Train the model
-        train_model(train, test, model, device, time_dim, beta_lower, beta_upper,\
+        train_model0(train, test, model, device, time_dim, beta_lower, beta_upper,\
                      learning_rate, lr_scheduler, epochs, batch_size, early_stopping,\
                          optimizer, weight_decay, run)       
         
