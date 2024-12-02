@@ -305,8 +305,8 @@ def train_model(train_loader,\
             print(f'Validation loss improved. Saving model weights to model_weights/es_{learning_rate}_{batch_size}_{num_epochs}.pt')
             torch.save(model.state_dict(), f'model_weights/es_{learning_rate}_{batch_size}_{num_epochs}.pt')
             
-            if neptune_log:
-                neptune_log["model/best_model"].upload('best_model.pt')
+            # if neptune_log:
+            #     neptune_log["model/best_model"].upload('best_model.pt')
 
         # stop if the test loss is not improving after x percentage of total epochs
         elif early_stopping and (epoch - best_epoch > 0.6 * num_epochs):

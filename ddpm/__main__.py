@@ -10,7 +10,8 @@ import neptune
 
 from model import UNet, train_model
 from utils import set_project_root, init_weights, get_optimizer, loss_function
-from preprocess import Preprocess, save_image, transform_range
+from preprocess import Preprocess 
+from postprocess import sample_and_plot, save_image, transform_range
 from forward_process import add_noise
 from reverse_process import sample
 
@@ -24,6 +25,7 @@ def main(cfg: DictConfig):
     mode_train = cfg.mode.train
     mode_sample = cfg.mode.sample
     dataset = cfg.mode.dataset
+    sample_size = cfg.mode.sample_size
 
     # Define the model parameters
     in_channels = cfg.model.in_channels
@@ -97,29 +99,38 @@ def main(cfg: DictConfig):
         betas = torch.linspace(beta_lower, beta_upper, time_dim, device=device)
 
         if dataset == 'mnist':
-            shape = (10, in_channels, 28, 28)
+            shape = (sample_size, in_channels, 28, 28)
         elif dataset == 'cifar10':
-            shape = (10, in_channels, 32, 32)
+            shape = (sample_size, in_channels, 32, 32)
 
-        # Sample from the model
-        sampled_img = sample(model, time_dim, betas, shape, device)
+        
+        if sample_size > 1:# Save the sampled image
+            sample_and_plot(model, time_dim, betas, shape, device, dataset, early_stopping, seed, learning_rate, batch_size, epochs, weight_decay)
 
-        ten_sample = sampled_img[:10]
-        # Plot the 10 sampled images
-        fig, axes = plt.subplots(1, 10, figsize=(15, 3), squeeze=False)
-        axes = axes[0]
-        for i, img in enumerate(ten_sample):
-            img = transform_range(img, img.min(), img.max(), 0, 1)
-            img = img.permute(1, 2, 0)
-            axes[i].imshow(img.detach().cpu().numpy(), cmap='gray')
-            axes[i].axis('off')
-        fig.savefig(f'saved_images_{dataset}/{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image.png')
+        else:
+            sampled_img = sample(model, time_dim, betas, shape, device)
+            sampled_img = sampled_img[0]
+            sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 
-        sampled_img = sampled_img[0]
-        sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
+            # Save the sampled image       
+            save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image_trans.png')
+
+        # ten_sample = sampled_img[:10]
+        # # Plot the 10 sampled images
+        # fig, axes = plt.subplots(1, 10, figsize=(15, 3), squeeze=False)
+        # axes = axes[0]
+        # for i, img in enumerate(ten_sample):
+        #     img = transform_range(img, img.min(), img.max(), 0, 1)
+        #     img = img.permute(1, 2, 0)
+        #     axes[i].imshow(img.detach().cpu().numpy(), cmap='gray')
+        #     axes[i].axis('off')
+        # fig.savefig(f'saved_images_{dataset}/{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image.png')
+
+        # sampled_img = sampled_img[0]
+        # sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 
         # Save the sampled image       
-        save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image_trans.png')
+        # save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image_trans.png')
 
 if __name__ == "__main__":
     main()
