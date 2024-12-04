@@ -121,7 +121,7 @@ if __name__ == "__main__":
     
     # Plot the noisy images in a grid
     fig, axes = plt.subplots(2, 3, figsize=(5, 4), squeeze=False)
-    for i, (image, time, mean, std) in enumerate(zip(images, times, means, stds)):
+    for i, (image, time) in enumerate(zip(images, times)):
         row, col = divmod(i, 3)  # Map index to grid position (row, column)
         
         # Plot the image
@@ -132,8 +132,10 @@ if __name__ == "__main__":
         axes[row, col].set_title(f"Noise to time {int(time)}", fontsize=10, pad=10)
         
         # Add a subtitle below the main title
-        axes[row, col].text(0.5, 1.05, f"Mean: {int(mean)}, Std: {int(std)}", ha='center', va='center', 
-                            transform=axes[row, col].transAxes, fontsize=8, color='#404040')
+        axes[row, col].text(0.5, 1.05,
+                    f"Mean: {means[int(time) - 1]:.2f}, Std: {stds[int(time) - 1]:.2f}",
+                    ha='center', va='center', 
+                    transform=axes[row, col].transAxes, fontsize=8, color='#404040')
     plt.savefig('poster/progressive_noise.png')
     plt.close
     
