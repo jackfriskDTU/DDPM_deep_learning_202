@@ -74,7 +74,7 @@ def main(cfg: DictConfig):
                      learning_rate, lr_scheduler, epochs, batch_size, early_stopping,\
                          optimizer, weight_decay, run)       
         
-        print(f"Saving model weights to main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt")
+        print(f"Saving model weights to main_{early_stopping}_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt")
         torch.save(model.state_dict(),\
                     f'model_weights/main_{early_stopping}_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt')
         
