@@ -95,8 +95,10 @@ if __name__ == "__main__":
 
             # Append the image to the tensor
             images[counter] = img_noisy
-            # Add 1 and turn into int
+
+            # Add 1 to nullify the 0-indexing
             times[counter] = T_t + 1
+
             counter += 1
 
             # Save the noisy image
@@ -107,16 +109,18 @@ if __name__ == "__main__":
     plt.subplot(1, 2, 1)
     plt.plot(means.detach().cpu().numpy())
     plt.axhline(y=0, color='gray', linestyle='--', linewidth=2)
-    plt.xlabel('Timestep')
-    plt.ylabel('Mean')
-    plt.title('Mean of Noisy Image over Time')
+    plt.xlabel('Timestep', fontsize=14)
+    plt.ylabel('Mean', fontsize=14)
+    plt.tick_params(axis='both', which='major', labelsize=12)
+    plt.title('Mean of Noisy Image over Time', fontsize=16)
     plt.subplot(1, 2, 2)
     plt.plot(stds.detach().cpu().numpy())
     plt.axhline(y=1, color='gray', linestyle='--', linewidth=2)
-    plt.xlabel('Timestep')
-    plt.ylabel('Standard Deviation')
-    plt.title('Standard Deviation of Noisy Image over Time')
-    plt.savefig('poster/mean_std_over_time.png')
+    plt.xlabel('Timestep', fontsize=14)
+    plt.ylabel('Standard Deviation', fontsize=14)
+    plt.tick_params(axis='both', which='major', labelsize=12)
+    plt.title('Std Dev of Noisy Image over Time', fontsize=16)
+    plt.savefig('poster/mean_std_over_time_diffusion.png')
     plt.close
     
     # Plot the noisy images in a grid
@@ -136,6 +140,6 @@ if __name__ == "__main__":
                     f"Mean: {means[int(time) - 1]:.2f}, Std: {stds[int(time) - 1]:.2f}",
                     ha='center', va='center', 
                     transform=axes[row, col].transAxes, fontsize=8, color='#404040')
-    plt.savefig('poster/progressive_noise.png')
+    plt.savefig('poster/progressive_noise_diffusion.png')
     plt.close
     
