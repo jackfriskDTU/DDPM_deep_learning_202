@@ -8,7 +8,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 import sys
-from forward_process import add_noise
+from forward_process import *
 
 class Preprocess:
     def load_dataset(batch_size, dataset, train_size=200, test_size=20):
@@ -26,7 +26,7 @@ class Preprocess:
         test_dataset = Subset(test_dataset, np.arange(0, test_size))
 
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
         
         return train_loader, test_loader
 
@@ -124,7 +124,7 @@ def save_image(image_tensor, save_dir, filename=None, index=0):
 
 if __name__ == '__main__':
     ### Load data ###
-    train_loader, test_loader = Preprocess.preprocess_dataset(64, 'mnist')
+    train_loader, test_loader = Preprocess.preprocess_dataset(200, dataset='mnist', train_size=200, test_size=200)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     ### Visualize label distribution ###

@@ -64,7 +64,7 @@ def sample(model, timesteps, betas, shape, device, stepwise):
             means[t] = x_t.mean()
             stds[t] = x_t.std()
 
-            if t in [9, 19, 49, 99, 249, 499]:
+            if t in [499, 199, 149, 99, 49, 0]:
                 # Transform the image to [0, 1] to save image
                 img_denoise = transform_range(x_t, x_t.min(), x_t.max(), 0, 1)
 
@@ -72,8 +72,6 @@ def sample(model, timesteps, betas, shape, device, stepwise):
                 img_denoise = img_denoise.squeeze(0)
 
                 # Append the image to the tensor
-                print(f'images.shape: {images.shape}')
-                print(f'img_denoise.shape: {img_denoise.shape}')
                 images[counter] = img_denoise
 
                 # Add 1 to nullify the 0-indexing
