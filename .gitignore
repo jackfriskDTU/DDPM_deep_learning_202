@@ -181,4 +181,4 @@ model_weights/
 .neptune/
 
 # submit script
-submit_main.sh
+./submit_main.sh
