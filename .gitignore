@@ -175,3 +175,6 @@ saved_images*/
 
 # model
 model_weights/
+
+# std
+std/
