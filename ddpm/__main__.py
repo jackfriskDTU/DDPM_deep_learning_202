@@ -106,7 +106,7 @@ def main(cfg: DictConfig):
             shape = (10, in_channels, 32, 32)
 
         # Sample from the model
-        sampled_img = sample(model, time_dim, betas, shape, device)
+        sampled_img = sample(model, time_dim, betas, shape, device, stepwise = False)
 
         ten_sample = sampled_img[:10]
         # Plot the 10 sampled images
