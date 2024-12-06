@@ -173,6 +173,7 @@ plots/
 
 # images
 saved_images*/
+poster/
 
 # model
 model_weights/
