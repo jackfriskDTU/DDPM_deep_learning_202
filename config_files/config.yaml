@@ -14,14 +14,14 @@ model:
   seed: 1
 
 training:
-  train_size: 25000
+  train_size: 1000
   test_size: 100
   optimizer: Adam # Adam, SGD
   weight_decay: 0 # 1e-2
   learning_rate: 0.001
   lr_scheduler: None # None, StepLR, ExponentialLR, ReduceLROnPlateau, CosineAnnealingLR
-  batch_size: 50
-  epochs: 100
+  batch_size: 100
+  epochs: 20
   beta_lower: 0.0001 
   beta_upper: 0.02
   early_stopping: False
