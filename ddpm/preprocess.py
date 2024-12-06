@@ -24,7 +24,7 @@ class Preprocess:
         test_dataset = Subset(test_dataset, np.arange(0, test_size))
 
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+        test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
         
         return train_loader, test_loader
 
