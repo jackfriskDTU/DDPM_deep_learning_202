@@ -166,6 +166,7 @@ data/
 
 # logs
 outputs/
+std/
 
 # generated plots
 plots/
@@ -175,3 +176,9 @@ saved_images*/
 
 # model
 model_weights/
+
+# logs
+.neptune/
+
+# submit script
+submit_main.sh
