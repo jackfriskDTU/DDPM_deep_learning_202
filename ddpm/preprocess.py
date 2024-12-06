@@ -1,14 +1,12 @@
 import numpy as np
-import os
 import torch
 from torch.utils.data import DataLoader, TensorDataset, Subset
 from torchvision import datasets,transforms
-from PIL import Image
 
 import matplotlib.pyplot as plt
 
-import sys
 from forward_process import add_noise
+# from postprocess import save_image
 
 class Preprocess:
     def load_dataset(batch_size, dataset, train_size=200, test_size=20):
@@ -73,54 +71,34 @@ class Preprocess:
             print(images.shape)
             break
 
-def transform_range(tensor, source_min=None, source_max=None, target_min=0, target_max=255):
-    """
-    Transform tensor from [source_min, source_max] to [target_min, target_max] range.
-    If source_min/max are None, they are taken from the tensor.
+# def transform_range(tensor, source_min=None, source_max=None, target_min=0, target_max=255):
+#     """
+#     Transform tensor from [source_min, source_max] to [target_min, target_max] range.
+#     If source_min/max are None, they are taken from the tensor.
     
-    Args:
-        tensor (torch.Tensor): Input tensor
-        source_min (float): Current minimum value. If None, uses tensor.min()
-        source_max (float): Current maximum value. If None, uses tensor.max()
-        target_min (float): Desired minimum value (default: 0)
-        target_max (float): Desired maximum value (default: 255)
+#     Args:
+#         tensor (torch.Tensor): Input tensor
+#         source_min (float): Current minimum value. If None, uses tensor.min()
+#         source_max (float): Current maximum value. If None, uses tensor.max()
+#         target_min (float): Desired minimum value (default: 0)
+#         target_max (float): Desired maximum value (default: 255)
     
-    Returns:
-        torch.Tensor: Transformed tensor
-    """
-    # Get source range if not provided
-    if source_min is None:
-        source_min = tensor.min()
-    if source_max is None:
-        source_max = tensor.max()
+#     Returns:
+#         torch.Tensor: Transformed tensor
+#     """
+#     # Get source range if not provided
+#     if source_min is None:
+#         source_min = tensor.min()
+#     if source_max is None:
+#         source_max = tensor.max()
         
-    # First normalize to [0,1]
-    normalized = (tensor - source_min) / (source_max - source_min)
+#     # First normalize to [0,1]
+#     normalized = (tensor - source_min) / (source_max - source_min)
     
-    # Then scale to target range
-    transformed = normalized * (target_max - target_min) + target_min
+#     # Then scale to target range
+#     transformed = normalized * (target_max - target_min) + target_min
     
-    return transformed
-
-def save_image(image_tensor, save_dir, filename=None, index=0):
-    try:
-        os.makedirs(save_dir, exist_ok=True)
-        
-        image_pil = transforms.ToPILImage()(image_tensor)
-        
-        if filename is None:
-            filename = f'image_{index}.png'
-            
-        save_path = os.path.join(save_dir, filename)
-        
-        image_pil.save(save_path)
-        print(f"Image saved successfully to {save_path}")
-        
-        return save_path
-        
-    except Exception as e:
-        print(f"Error saving image: {str(e)}")
-        return None
+#     return transformed
 
 if __name__ == '__main__':
     train_loader, test_loader = Preprocess.preprocess_dataset(64, 'mnist')
