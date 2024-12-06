@@ -77,9 +77,9 @@ def main(cfg: DictConfig):
                      learning_rate, lr_scheduler, epochs, batch_size, early_stopping,\
                          optimizer, weight_decay, run)       
         
-        print(f"Saving model weights to main_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt")
+        print(f"Saving model weights to {train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{early_stopping}_{seed}_{time_dim}_{dataset}.pt")
         torch.save(model.state_dict(),\
-                    f'model_weights/main_{early_stopping}_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt')
+                    f'model_weights/{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{early_stopping}_{seed}_{time_dim}_{dataset}.pt')
 
     if mode_sample:
         if early_stopping:
@@ -89,10 +89,10 @@ def main(cfg: DictConfig):
                                          weights_only=True))
 
         else:
-            print(f"predicting with main_{learning_rate}_{time_dim}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt")
+            print(f"predicting with {train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{early_stopping}_{seed}_{time_dim}_{dataset}.pt")
             # Load the model weights
             model.load_state_dict(torch.load(\
-                f'model_weights/main_{early_stopping}_{time_dim}_{5}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}.pt',
+                f'model_weights/{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{True}_{seed}_{time_dim}_{dataset}.pt',
                                         map_location=torch.device('cuda'),
                                         weights_only=True))
         model.eval()
@@ -106,7 +106,7 @@ def main(cfg: DictConfig):
 
         
         if sample_size > 1:# Save the sampled image
-            sample_and_plot(model, time_dim, betas, shape, device, dataset, early_stopping, seed, learning_rate, batch_size, epochs, weight_decay)
+            sample_and_plot(model, betas, shape, device, train_size, test_size, optimizer, weight_decay, learning_rate, lr_scheduler, batch_size, epochs, early_stopping, seed, time_dim, dataset)
 
         else:
             sampled_img = sample(model, time_dim, betas, shape, device)
@@ -114,7 +114,7 @@ def main(cfg: DictConfig):
             sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 
             # Save the sampled image       
-            save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image_trans.png')
+            save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{early_stopping}_{seed}_{time_dim}_{dataset}.png')
 
         # ten_sample = sampled_img[:10]
         # # Plot the 10 sampled images
