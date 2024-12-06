@@ -113,7 +113,7 @@ def main(cfg: DictConfig):
             sample_and_plot(model, betas, shape, device, train_size, test_size, optimizer, weight_decay, learning_rate, lr_scheduler, batch_size, epochs, early_stopping, seed, time_dim, dataset)
 
         else:
-            sampled_img = sample(model, time_dim, betas, shape, device)
+            sampled_img = sample(model, time_dim, betas, shape, device, stepwise=False)
             sampled_img = sampled_img[0]
             sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 

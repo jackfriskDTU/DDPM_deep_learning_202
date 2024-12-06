@@ -35,7 +35,7 @@ def transform_range(tensor, source_min=None, source_max=None, target_min=0, targ
 
 def sample_and_plot(model, betas, shape, device, train_size, test_size, optimizer, weight_decay, learning_rate, lr_scheduler, batch_size, epochs, early_stopping, seed, time_dim, dataset):
     # Sample from the model
-    sampled_img = sample(model, time_dim, betas, shape, device)
+    sampled_img = sample(model, time_dim, betas, shape, device, stepwise=False)
 
     ten_sample = sampled_img[:10]
     # Plot the 10 sampled images
