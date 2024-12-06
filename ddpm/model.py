@@ -224,10 +224,6 @@ def train_model(train_loader,\
 
     lr_scheduler = utils.get_scheduler(optimizer, lr_scheduler)
 
-
-
-
-
     # Start training
     for epoch in range(num_epochs):
         # Set the model to training mode
@@ -269,33 +265,52 @@ def train_model(train_loader,\
 
         # Compute the average loss for the epoch
         train_loss = sum(losses) / len(losses)
-        
-        if neptune_log:
-            neptune_log["train/loss"].log(train_loss)
+ 
 
-       # test phase
+        # test phase
+        # Set the model to evaluation mode
         model.eval()
+        
+        # Placeholder to save test loss
         test_loss = []
+        
+        # Disable gradient calculation for validation
         with torch.no_grad():
+            # Iterate over batches in the test loader
             for batch, _ in test_loader:
+                # Send batch to device
                 batch = batch.to(device, non_blocking=True)
+                
+                # Generate random timesteps for each image in the batch
                 t = torch.randint(0, T, (batch_size,), device=device)
+                
+                # Add noise to the batch
                 batch_noised, noise = add_noise(batch, betas, t, device)
                 batch_noised = batch_noised.to(device)
                 noise = noise.to(device)
 
+                # Forward pass
                 predicted_noise = model.forward(batch_noised, t, verbose=False)
+                
+                # Compute loss
                 loss = utils.loss_function(predicted_noise, noise)
+                
+                # Save the loss
                 test_loss.append(loss.item())
 
+        # Compute the average test loss
         test_loss = sum(test_loss) / len(test_loss)
-        
-        if neptune_log:
-            neptune_log["test/loss"].log(test_loss)
 
+        # Log learning rate to Neptune
+        if neptune_log:
+            neptune_log["train/learning_rate"].log(optimizer.param_groups[0]['lr'])
+            neptune_log["train/train"].log(train_loss)
+            neptune_log["train/test"].log(test_loss)
+
+        # Print the training and test loss for the current epoch
         print(f'Epoch {epoch+1}/{num_epochs}, \
               Train Loss: {train_loss:.4f}, Test Loss: {test_loss:.4f}, \
-                diff: {train_loss - test_loss:.4f}, best_loss: {best_loss:.4f}')
+            diff: {train_loss - test_loss:.4f}, best_loss: {best_loss:.4f}')
 
     # Save the model if the validation loss is the best we've seen so far
     # Early stopping
@@ -306,7 +321,7 @@ def train_model(train_loader,\
             torch.save(model.state_dict(), f'model_weights/es_{learning_rate}_{batch_size}_{num_epochs}.pt')
             
             # if neptune_log:
-            #     neptune_log["model/best_model"].upload('best_model.pt')
+            #     neptune_log["model/best_model"].upload(best_epoch)
 
         # stop if the test loss is not improving after x percentage of total epochs
         elif early_stopping and (epoch - best_epoch > 0.6 * num_epochs):
@@ -324,6 +339,7 @@ def train_model(train_loader,\
     print("Finished training.")
 
     if neptune_log:
+
         neptune_log.stop()
 
     return losses
