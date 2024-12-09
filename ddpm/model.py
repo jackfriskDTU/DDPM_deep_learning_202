@@ -78,20 +78,20 @@ class UNet(nn.Module):
         # The pooling layer downsamples the input by a factor of 2.
         # The upconvolutional layer upsamples the input by a factor of 2.
         self.pool = nn.MaxPool2d(2)
-        self.upconv4 = nn.ConvTranspose2d(self.num_params[3], self.num_params[3], 2, stride=2)
-        self.upconv3 = nn.ConvTranspose2d(self.num_params[2], self.num_params[2], 2, stride=2)
-        self.upconv2 = nn.ConvTranspose2d(self.num_params[1], self.num_params[1], 2, stride=2)
-        self.upconv1 = nn.ConvTranspose2d(self.num_params[0], self.num_params[0], 2, stride=2)
+        self.upconv4 = nn.ConvTranspose2d(self.num_params[3], self.num_params[3], kernel_size = 2, stride=2)
+        self.upconv3 = nn.ConvTranspose2d(self.num_params[2], self.num_params[2], kernel_size = 2, stride=2)
+        self.upconv2 = nn.ConvTranspose2d(self.num_params[1], self.num_params[1], kernel_size = 2, stride=2)
+        self.upconv1 = nn.ConvTranspose2d(self.num_params[0], self.num_params[0], kernel_size = 2, stride=2)
 
     def conv_block(self, in_channels, out_channels, dropout_prob):
         """A convolutional block consists of two convolutional layers
         followed by ReLU activations."""
         return nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=2, padding=0),
+            nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout_prob),
-            nn.Conv2d(out_channels, out_channels, kernel_size=2, padding=1),
+            nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
             nn.Dropout(dropout_prob)
