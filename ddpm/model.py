@@ -187,7 +187,7 @@ def train_model(train_loader,\
                          beta_lower=1e-4,\
                            beta_upper=0.02,\
                              learning_rate=1e-3,\
-                               lr_scheduler = "StepLR",\
+                               lr_scheduler = "None",\
                                  num_epochs=4,\
                                    batch_size = 64,\
                                      early_stopping=False,\
