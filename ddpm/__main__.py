@@ -120,40 +120,6 @@ def main(cfg: DictConfig):
             # Save the sampled image       
             save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{early_stopping}_{seed}_{time_dim}_{dataset}.png')
 
-        # ten_sample = sampled_img[:10]
-        # # Plot the 10 sampled images
-        # fig, axes = plt.subplots(1, 10, figsize=(15, 3), squeeze=False)
-        # axes = axes[0]
-        # for i, img in enumerate(ten_sample):
-        #     img = transform_range(img, img.min(), img.max(), 0, 1)
-        #     img = img.permute(1, 2, 0)
-        #     axes[i].imshow(img.detach().cpu().numpy(), cmap='gray')
-        #     axes[i].axis('off')
-        # fig.savefig(f'saved_images_{dataset}/{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image.png')
-
-        # sampled_img = sampled_img[0]
-        # sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
-
-        # Save the sampled image       
-        # save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image_trans.png')
-
-        # ten_sample = sampled_img[:10]
-        # # Plot the 10 sampled images
-        # fig, axes = plt.subplots(1, 10, figsize=(15, 3), squeeze=False)
-        # axes = axes[0]
-        # for i, img in enumerate(ten_sample):
-        #     img = transform_range(img, img.min(), img.max(), 0, 1)
-        #     img = img.permute(1, 2, 0)
-        #     axes[i].imshow(img.detach().cpu().numpy(), cmap='gray')
-        #     axes[i].axis('off')
-        # fig.savefig(f'saved_images_{dataset}/{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image.png')
-
-        # sampled_img = sampled_img[0]
-        # sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
-
-        # Save the sampled image       
-        # save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{early_stopping}_{seed}_{learning_rate}_{batch_size}_{epochs}_{dataset}_{weight_decay}_sampled_image_trans.png')
-
 if __name__ == "__main__":
     main()
 
