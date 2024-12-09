@@ -1,7 +1,9 @@
 import torch
 import sys
 import numpy as np
+import pandas as pd
 
+from postprocess import *
 from preprocess import *
 import matplotlib.pyplot as plt
 
@@ -104,6 +106,13 @@ if __name__ == "__main__":
             # Save the noisy image
             save_image(img_noisy, save_dir='poster', filename=f'noisy_{T_t+1}_image.png')
 
+    # Read in other set of means and stds from .csv file
+    data = pd.read_csv('poster/mean_std_over_time_denoising.csv')
+
+    # Extract the columns into variables
+    mean_denoising = data['Mean'].values
+    std_denoising = data['Std'].values
+
     # Plot the means and stds over time side by side
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
@@ -112,15 +121,38 @@ if __name__ == "__main__":
     plt.xlabel('Timestep', fontsize=14)
     plt.ylabel('Mean', fontsize=14)
     plt.tick_params(axis='both', which='major', labelsize=12)
-    plt.title('Mean of Noisy Image over Time', fontsize=16)
+    plt.title('Mean of Image over Time', fontsize=16)
     plt.subplot(1, 2, 2)
     plt.plot(stds.detach().cpu().numpy())
     plt.axhline(y=1, color='gray', linestyle='--', linewidth=2)
     plt.xlabel('Timestep', fontsize=14)
     plt.ylabel('Standard Deviation', fontsize=14)
     plt.tick_params(axis='both', which='major', labelsize=12)
-    plt.title('Std Dev of Noisy Image over Time', fontsize=16)
+    plt.title('Std Dev of Image over Time', fontsize=16)
     plt.savefig('poster/mean_std_over_time_diffusion.png')
+    plt.close
+
+    # Plot the means and stds over time side by side with denoising as well
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plt.plot(means.detach().cpu().numpy(), label = 'Forward')
+    plt.plot(mean_denoising, label = 'Reverse')
+    plt.axhline(y=0, color='gray', linestyle='--', linewidth=2)
+    plt.xlabel('Timestep', fontsize=14)
+    plt.ylabel('Mean', fontsize=14)
+    plt.tick_params(axis='both', which='major', labelsize=12)
+    plt.title('Mean of Image over Time', fontsize=16)
+    plt.legend(fontsize=12)
+    plt.subplot(1, 2, 2)
+    plt.plot(stds.detach().cpu().numpy(), label = 'Forward')
+    plt.plot(std_denoising, label = 'Reverse')
+    plt.axhline(y=1, color='gray', linestyle='--', linewidth=2)
+    plt.xlabel('Timestep', fontsize=14)
+    plt.ylabel('Standard Deviation', fontsize=14)
+    plt.tick_params(axis='both', which='major', labelsize=12)
+    plt.title('Std Dev of Image over Time', fontsize=16)
+    plt.legend(fontsize=12)
+    plt.savefig('poster/mean_std_over_time_both.png')
     plt.close
     
     # Plot the noisy images in a grid

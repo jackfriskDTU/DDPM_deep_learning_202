@@ -1,6 +1,6 @@
 import torch
 import model
-from preprocess import *
+from postprocess import *
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -61,12 +61,13 @@ def sample(model, timesteps, betas, shape, device, stepwise):
 
         if stepwise:
             # Add the mean and std to the tensors to plot
-            means[t] = x_t.mean()
-            stds[t] = x_t.std()
+            x_t_sub_image = x_t[0]
+            means[t] = x_t_sub_image.mean()
+            stds[t] = x_t_sub_image.std()
 
             if t in [499, 199, 149, 99, 49, 0]:
                 # Transform the image to [0, 1] to save image
-                img_denoise = transform_range(x_t, x_t.min(), x_t.max(), 0, 1)
+                img_denoise = transform_range(x_t_sub_image, x_t_sub_image.min(), x_t_sub_image.max(), 0, 1)
 
                 # Remove batch dimension
                 img_denoise = img_denoise.squeeze(0)
@@ -84,6 +85,11 @@ def sample(model, timesteps, betas, shape, device, stepwise):
         torch.cuda.empty_cache()
 
     if stepwise:
+        # Save the mean and stds to a csv file but reverse the order of mean and stds to match the forward process
+        means = torch.flip(means, [0])
+        stds = torch.flip(stds, [0])
+        np.savetxt('poster/mean_std_over_time_denoising.csv', np.column_stack((means.detach().cpu().numpy(), stds.detach().cpu().numpy())), delimiter=',', header='Mean,Std', comments='')
+        
         # Plot the means and stds over time side by side
         plt.figure(figsize=(12, 6))
         plt.subplot(1, 2, 1)
@@ -105,7 +111,7 @@ def sample(model, timesteps, betas, shape, device, stepwise):
         plt.title('Std Dev of denoising over Time', fontsize=16)
         plt.savefig('poster/mean_std_over_time_denoising.png')
         plt.close
-        
+
         # Plot the noisy images in a grid
         fig, axes = plt.subplots(2, 3, figsize=(5, 4), squeeze=False)
         for i, (image, time) in enumerate(zip(images, times)):
@@ -116,7 +122,7 @@ def sample(model, timesteps, betas, shape, device, stepwise):
             axes[row, col].axis('off')  # Turn off the axes
             
             # Set the main title
-            axes[row, col].set_title(f"Noise to time {int(time)}", fontsize=10, pad=10)
+            axes[row, col].set_title(f"Noise at time {int(time)}", fontsize=10, pad=10)
             
             # Add a subtitle below the main title
             axes[row, col].text(0.5, 1.05,
@@ -144,12 +150,11 @@ if __name__ == "__main__":
     # Load the model weights
     model = model.UNet(C, C)  # Adjust the parameters as needed
     model.to(device)
-    model.load_state_dict(torch.load('model_weights/main_False_500_1_0.001_100_40_mnist_0.0.pt', map_location=torch.device('cuda'), weights_only=True))
+    model.load_state_dict(torch.load('model_weights/12800_1280_Adam_0.0_0.001_None_128_50_True_1_500_mnist.pt', map_location=torch.device('cuda'), weights_only=False))
     model.eval()
 
     # Sample from the model
     sampled_img = sample(model, T, betas, shape, device, stepwise=True)
-    # sampled_img = sampled_img[0]
 
     # sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 

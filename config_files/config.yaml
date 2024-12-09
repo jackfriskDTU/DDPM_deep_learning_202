@@ -2,7 +2,7 @@ defaults:
   - _self_
 
 mode:
-  train: False
+  train: True
   sample: True
   dataset: "mnist" # "mnist" or "cifar10"
   sample_size: 10
@@ -10,19 +10,19 @@ mode:
 model:
   in_channels: 1
   out_channels: 1
-  time_dim: 500
+  time_dim: 1000
   seed: 1
 
 training:
-  train_size: 5000
-  test_size: 100
+  train_size: 12800
+  test_size: 1280
   optimizer: Adam # Adam, SGD
-  weight_decay: 0 # 1e-2
-  learning_rate: 0.001
-  lr_scheduler: None # None, StepLR, ExponentialLR, ReduceLROnPlateau, CosineAnnealingLR
-  batch_size: 100
-  epochs: 200
+  weight_decay: 0.001 # 1e-2
+  learning_rate: 0.01
+  lr_scheduler: StepLR # None, StepLR, ExponentialLR, ReduceLROnPlateau, CosineAnnealingLR
+  batch_size: 128
+  epochs: 100
   beta_lower: 0.0001 
   beta_upper: 0.02
-  early_stopping: False
-  neptune: False
+  early_stopping: True
+  neptune: True
