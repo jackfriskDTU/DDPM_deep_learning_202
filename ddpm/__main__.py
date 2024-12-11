@@ -108,17 +108,17 @@ def main(cfg: DictConfig):
         elif dataset == 'cifar10':
             shape = (sample_size, in_channels, 32, 32)
 
-        
-        if sample_size > 1:# Save the sampled image
-            sample_and_plot(model, betas, shape, device, train_size, test_size, optimizer, weight_decay, learning_rate, lr_scheduler, batch_size, epochs, early_stopping, seed, time_dim, dataset)
+        with torch.no_grad():
+            if sample_size > 1:# Save the sampled image
+                sample_and_plot(model, betas, shape, device, train_size, test_size, optimizer, weight_decay, learning_rate, lr_scheduler, batch_size, epochs, early_stopping, seed, time_dim, dataset)
 
-        else:
-            sampled_img = sample(model, time_dim, betas, shape, device, stepwise=False)
-            sampled_img = sampled_img[0]
-            sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
+            else:
+                sampled_img = sample(model, time_dim, betas, shape, device, stepwise=False)
+                sampled_img = sampled_img[0]
+                sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 
-            # Save the sampled image       
-            save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{early_stopping}_{seed}_{time_dim}_{dataset}.png')
+                # Save the sampled image       
+                save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{early_stopping}_{seed}_{time_dim}_{dataset}.png')
 
 if __name__ == "__main__":
     main()
