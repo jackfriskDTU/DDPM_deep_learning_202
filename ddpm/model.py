@@ -46,8 +46,10 @@ class UNet(nn.Module):
         # If MNIST
         if in_channels == 1:
             self.image_shape = 28
+            self.layers = 2
         else:
             self.image_shape = 32
+            self.layers = 3
 
         # List of values for the number of parameters in each layer
         self.num_params = [32, 64, 128, 256]
@@ -114,7 +116,7 @@ class UNet(nn.Module):
         emb = torch.cat([torch.sin(emb), torch.cos(emb)], dim=-1)
         return emb
 
-    def forward(self, x, t, verbose=False, layers=3):
+    def forward(self, x, t, verbose=False):
         """Forward pass of the U-Net model.
         Verbose mode prints the shape of intermediate tensors."""
         
@@ -132,35 +134,40 @@ class UNet(nn.Module):
 
         x = x + time_emb_in
 
-        if layers == 3:
+        if self.layers == 2:
             enc1 = self.encoder1(x)
             enc1 = enc1 + time_emb_1
             enc2 = self.encoder2(self.pool(enc1))
             enc2 = enc2 + time_emb_2
-            bottleneck = self.encoder3(self.pool(enc2))
 
+            bottleneck = self.encoder3(self.pool(enc2))
             bottleneck_upconv = self.upconv3(bottleneck)
             bottleneck_upconv = torch.cat((bottleneck_upconv, enc2), dim=1)
+
             dec2 = self.decoder3(bottleneck_upconv)
-            
             dec2_upconv = self.upconv2(dec2)
             dec2_upconv = torch.cat((dec2_upconv, enc1), dim=1)
             dec1 = self.decoder2(dec2_upconv)
             output = self.decoder1(dec1)
 
-        elif layers == 4:
+        elif self.layers == 3:
             enc1 = self.encoder1(x)
+            enc1 = enc1 + time_emb_1
             enc2 = self.encoder2(self.pool(enc1))
+            enc2 = enc2 + time_emb_2
             enc3 = self.encoder3(self.pool(enc2))
-            # Practically identical to encoder 4
-            bottleneck = self.encoder4(self.pool(enc3))
+            enc3 = enc3 + time_emb_3
 
+            bottleneck = self.encoder4(self.pool(enc3))
             bottleneck_upconv = self.upconv4(bottleneck)
-            dec3 = self.decoder4(torch.cat((bottleneck_upconv, enc3), dim=1))
+            bottleneck_upconv = torch.cat((bottleneck_upconv, enc3), dim=1)
+            dec3 = self.decoder4(bottleneck_upconv)
             dec3_upconv = self.upconv3(dec3)
-            dec2 = self.decoder3(torch.cat((dec3_upconv, enc2), dim=1))
+            dec3_upconv = torch.cat((dec3_upconv, enc2), dim=1)
+            dec2 = self.decoder3(dec3_upconv)
             dec2_upconv = self.upconv2(dec2)
-            dec1 = self.decoder2(torch.cat((dec2_upconv, enc1), dim=1))
+            dec2_upconv = torch.cat((dec2_upconv, enc1), dim=1)
+            dec1 = self.decoder2(dec2_upconv)
             output = self.decoder1(dec1)
 
 
@@ -168,10 +175,10 @@ class UNet(nn.Module):
             print('x.size() =', x.size())
             print('enc1.size() =', enc1.size())
             print('enc2.size() =', enc2.size())
-            if (layers == 4):
+            if (self.layers == 3):
                 print('enc3.size() =', enc3.size())
             print('bottleneck.size() =', bottleneck.size())
-            if (layers == 4):
+            if (self.layers == 3):
                 print('dec3.size() =', dec3.size())
             print('dec2.size() =', dec2.size())
             print('dec1.size() =', dec1.size())
