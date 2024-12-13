@@ -53,9 +53,10 @@ if __name__ == "__main__":
     df_noised, noise = add_noise(df, betas, t, device)
 
 
-    ### Example with MNIST data ###
+    ### Example with actual data ###
+    dataset = 'cifar10'
     # Load data #
-    train_loader, test_loader = Preprocess.preprocess_dataset(64, 'mnist')
+    train_loader, test_loader = Preprocess.preprocess_dataset(64, dataset)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     # Get a sample image and label
     img, _ = train_loader.dataset[1] # Set to one to get a nice zero
@@ -68,7 +69,10 @@ if __name__ == "__main__":
     betas = torch.linspace(1e-4, 0.02, T, device=device)
 
     # Img, means and std as tensor, placeholders
-    images = torch.zeros((6, 28, 28))
+    if dataset == 'mnist':
+        images = torch.zeros((6, 28, 28))
+    elif dataset == 'cifar10':
+        images = torch.zeros((6, 3, 32, 32))
     times = torch.zeros(6)
     means = torch.zeros(T, device=device)
     stds = torch.zeros(T, device=device)
@@ -104,10 +108,10 @@ if __name__ == "__main__":
             counter += 1
 
             # Save the noisy image
-            save_image(img_noisy, save_dir='poster', filename=f'noisy_{T_t+1}_image.png')
+            save_image(img_noisy, save_dir='poster', filename=f'noisy_{T_t+1}_image_{dataset}.png')
 
     # Read in other set of means and stds from .csv file
-    data = pd.read_csv('poster/mean_std_over_time_denoising.csv')
+    data = pd.read_csv(f'poster/mean_std_over_time_denoising_{dataset}.csv')
 
     # Extract the columns into variables
     mean_denoising = data['Mean'].values
@@ -129,7 +133,7 @@ if __name__ == "__main__":
     plt.ylabel('Standard Deviation', fontsize=14)
     plt.tick_params(axis='both', which='major', labelsize=12)
     plt.title('Std Dev of Image over Time', fontsize=16)
-    plt.savefig('poster/mean_std_over_time_diffusion.png')
+    plt.savefig(f'poster/mean_std_over_time_diffusion_{dataset}.png')
     plt.close
 
     # Plot the means and stds over time side by side with denoising as well
@@ -152,13 +156,17 @@ if __name__ == "__main__":
     plt.tick_params(axis='both', which='major', labelsize=12)
     plt.title('Std Dev of Image over Time', fontsize=16)
     plt.legend(fontsize=12)
-    plt.savefig('poster/mean_std_over_time_both.png')
+    plt.savefig(f'poster/mean_std_over_time_both_{dataset}.png')
     plt.close
     
     # Plot the noisy images in a grid
     fig, axes = plt.subplots(2, 3, figsize=(5, 4), squeeze=False)
     for i, (image, time) in enumerate(zip(images, times)):
         row, col = divmod(i, 3)  # Map index to grid position (row, column)
+
+        # Permute the image to (H, W, C) for plotting
+        if dataset == 'cifar10':
+            image = image.permute(1, 2, 0)
         
         # Plot the image
         axes[row, col].imshow(image.detach().cpu().numpy(), cmap='gray')
@@ -172,6 +180,6 @@ if __name__ == "__main__":
                     f"Mean: {means[int(time) - 1]:.2f}, Std: {stds[int(time) - 1]:.2f}",
                     ha='center', va='center', 
                     transform=axes[row, col].transAxes, fontsize=8, color='#404040')
-    plt.savefig('poster/progressive_noise_diffusion.png')
+    plt.savefig(f'poster/progressive_noise_diffusion_{dataset}.png')
     plt.close
     

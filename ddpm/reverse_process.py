@@ -4,7 +4,7 @@ from postprocess import *
 
 import matplotlib.pyplot as plt
 import numpy as np
-def sample(model, timesteps, betas, shape, device, stepwise):
+def sample(model, timesteps, betas, shape, device, stepwise, dataset):
     """
     Samples a new image from the learned reverse process.
     Args:
@@ -26,8 +26,11 @@ def sample(model, timesteps, betas, shape, device, stepwise):
     x_t = torch.randn_like(df, device=device)
 
     if stepwise: # This if is not needed, but to clarify it is used for stepwise plotting
-        # Placeholders for saving at different timesteps
-        images = torch.zeros((6, shape[2], shape[3]), device=device)
+        # Placeholders for saving at different timestep
+        if dataset == 'mnist':
+            images = torch.zeros((6, shape[2], shape[3]), device=device)
+        elif dataset == 'cifar10':
+            images = torch.zeros((6, 3, shape[2], shape[3]), device=device)
         times = torch.zeros(6)
         means = torch.zeros(timesteps, device=device)
         stds = torch.zeros(timesteps, device=device)
@@ -62,6 +65,7 @@ def sample(model, timesteps, betas, shape, device, stepwise):
         if stepwise:
             # Add the mean and std to the tensors to plot
             x_t_sub_image = x_t[0]
+            print('x_t_sub_image.shape:', x_t_sub_image.shape)
             means[t] = x_t_sub_image.mean()
             stds[t] = x_t_sub_image.std()
 
@@ -81,14 +85,14 @@ def sample(model, timesteps, betas, shape, device, stepwise):
                 counter += 1
 
                 # Save the noisy image
-                save_image(img_denoise, save_dir='poster', filename=f'denoise_{t+1}_image.png')
+                save_image(img_denoise, save_dir='poster', filename=f'denoise_{t+1}_image_{dataset}.png')
         torch.cuda.empty_cache()
 
     if stepwise:
         # Save the mean and stds to a csv file but reverse the order of mean and stds to match the forward process
         means = torch.flip(means, [0])
         stds = torch.flip(stds, [0])
-        np.savetxt('poster/mean_std_over_time_denoising.csv', np.column_stack((means.detach().cpu().numpy(), stds.detach().cpu().numpy())), delimiter=',', header='Mean,Std', comments='')
+        np.savetxt(f'poster/mean_std_over_time_denoising_{dataset}.csv', np.column_stack((means.detach().cpu().numpy(), stds.detach().cpu().numpy())), delimiter=',', header='Mean,Std', comments='')
         
         # Plot the means and stds over time side by side
         plt.figure(figsize=(12, 6))
@@ -109,13 +113,17 @@ def sample(model, timesteps, betas, shape, device, stepwise):
         plt.tick_params(axis='both', which='major', labelsize=12)
         plt.gca().invert_xaxis()
         plt.title('Std Dev of denoising over Time', fontsize=16)
-        plt.savefig('poster/mean_std_over_time_denoising.png')
+        plt.savefig(f'poster/mean_std_over_time_denoising_{dataset}.png')
         plt.close
 
         # Plot the noisy images in a grid
         fig, axes = plt.subplots(2, 3, figsize=(5, 4), squeeze=False)
         for i, (image, time) in enumerate(zip(images, times)):
             row, col = divmod(i, 3)  # Map index to grid position (row, column)
+
+            # Permute the image to (H, W, C) for plotting
+            if dataset == 'cifar10':
+                image = image.permute(1, 2, 0)
             
             # Plot the image
             axes[row, col].imshow(image.detach().cpu().numpy(), cmap='gray')
@@ -129,7 +137,7 @@ def sample(model, timesteps, betas, shape, device, stepwise):
                         f"Mean: {means[int(time) - 1]:.2f}, Std: {stds[int(time) - 1]:.2f}",
                         ha='center', va='center', 
                         transform=axes[row, col].transAxes, fontsize=8, color='#404040')
-        plt.savefig('poster/progressive_noise_denoising.png')
+        plt.savefig(f'poster/progressive_noise_denoising_{dataset}.png')
         plt.close
     return x_t
 
@@ -142,19 +150,24 @@ if __name__ == "__main__":
     torch.manual_seed(seed)
 
     # Example setup
-    B, C, H, W = 1, 1, 28, 28  # Batch size, channels, height, width
-    T = 500  # Number of timesteps
+    dataset = 'cifar10'
+    if dataset == 'mnist':
+        B, C, H, W = 1, 1, 28, 28 # Batch size, channels, height, width
+        T = 500
+    elif dataset == 'cifar10':
+        B, C, H, W = 1, 3, 32, 32  # Batch size, channels, height, width
+        T = 1000
     betas = torch.linspace(1e-4, 0.02, T)  # Example linear beta schedule
     shape = (B, C, H, W)
     
     # Load the model weights
     model = model.UNet(C, C)  # Adjust the parameters as needed
     model.to(device)
-    model.load_state_dict(torch.load('model_weights/12800_1280_Adam_0.0_0.001_None_128_50_True_1_500_mnist.pt', map_location=torch.device('cuda'), weights_only=False))
+    model.load_state_dict(torch.load('model_weights/49920_2816_Adam_0.001_0.01_StepLR_256_1000_True_1_1000_cifar10.pt', map_location=torch.device('cuda'), weights_only=False))
     model.eval()
 
     # Sample from the model
-    sampled_img = sample(model, T, betas, shape, device, stepwise=True)
+    sampled_img = sample(model, T, betas, shape, device, stepwise=True, dataset=dataset)
 
     # sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 
