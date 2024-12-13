@@ -65,7 +65,6 @@ def sample(model, timesteps, betas, shape, device, stepwise, dataset):
         if stepwise:
             # Add the mean and std to the tensors to plot
             x_t_sub_image = x_t[0]
-            print('x_t_sub_image.shape:', x_t_sub_image.shape)
             means[t] = x_t_sub_image.mean()
             stds[t] = x_t_sub_image.std()
 
@@ -163,7 +162,7 @@ if __name__ == "__main__":
     # Load the model weights
     model = model.UNet(C, C)  # Adjust the parameters as needed
     model.to(device)
-    model.load_state_dict(torch.load('model_weights/49920_2816_Adam_0.001_0.01_StepLR_256_1000_True_1_1000_cifar10.pt', map_location=torch.device('cuda'), weights_only=False))
+    model.load_state_dict(torch.load('model_weights/12800_1280_Adam_0.001_0.001_StepLR_128_25_True_1_1000_cifar10.pt', map_location=torch.device('cuda'), weights_only=False))
     model.eval()
 
     # Sample from the model
