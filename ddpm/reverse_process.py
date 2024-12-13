@@ -39,6 +39,12 @@ def sample(model, timesteps, betas, shape, device, stepwise, dataset):
         # Mean and std for gaussian noise
         means[0] = x_t.mean()
         stds[0] = x_t.std()
+        
+        # These are the timesteps to save the images
+        if dataset == 'cifar10':
+            timestamps = [999, 749, 499, 199, 99, 0]
+        elif dataset == 'mnist':
+            timestamps = [499, 199, 149, 99, 49, 0]
 
     for t in reversed(range(timesteps)):
         # Ensure t is a tensor
@@ -67,8 +73,7 @@ def sample(model, timesteps, betas, shape, device, stepwise, dataset):
             x_t_sub_image = x_t[0]
             means[t] = x_t_sub_image.mean()
             stds[t] = x_t_sub_image.std()
-
-            if t in [499, 199, 149, 99, 49, 0]:
+            if t in timestamps:
                 # Transform the image to [0, 1] to save image
                 img_denoise = transform_range(x_t_sub_image, x_t_sub_image.min(), x_t_sub_image.max(), 0, 1)
 

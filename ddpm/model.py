@@ -47,12 +47,11 @@ class UNet(nn.Module):
         if in_channels == 1:
             self.image_shape = 28
             self.layers = 2
+            self.num_params = [32, 64, 128, 256]
         else:
             self.image_shape = 32
             self.layers = 3
-
-        # List of values for the number of parameters in each layer
-        self.num_params = [32, 64, 128, 256]
+            self.num_params = [64, 128, 256, 512]
 
         # Linear layer to project time embedding to match input channels
         self.time_linear_in = nn.Linear(self.image_shape, in_channels)

@@ -64,8 +64,10 @@ if __name__ == "__main__":
  
     # Add batch dimension to img to make it work with add_noise()
     img = img.unsqueeze(0)
-
-    T = 500
+    if dataset == 'cifar10':
+        T = 1000
+    elif dataset == 'mnist':
+        T = 500
     betas = torch.linspace(1e-4, 0.02, T, device=device)
 
     # Img, means and std as tensor, placeholders
@@ -78,12 +80,21 @@ if __name__ == "__main__":
     stds = torch.zeros(T, device=device)
     counter = 0
 
-    # Mean and std for original image
-    means[0] = img.mean()
-    stds[0] = img.std()
+    # Add the original image
+    images[counter] = transform_range(img.squeeze(0), img.squeeze(0).min(), img.squeeze(0).max(), 0, 1)
+    times[counter] = 0
+    means[counter] = img.mean()
+    stds[counter] = img.std()
 
-    # Loop over all timesteps, but skip the first one
-    for T_t in range(1, T):
+    # These are the timesteps to save the images
+    if dataset == 'cifar10':
+        timestamps = [99, 199, 499, 749, 999]
+        
+    elif dataset == 'mnist':
+        timestamps = [19, 49, 99, 249, 499]
+
+    # Loop over all timesteps
+    for T_t in range(T):
         t = torch.tensor([T_t], device=device)
 
         # Add noise to the image, remove batch dimension
@@ -95,7 +106,9 @@ if __name__ == "__main__":
         stds[T_t] = img_noisy.std()
 
         # At certain timesteps, save the noisy image
-        if T_t in [9, 19, 49, 99, 249, 499]:
+        if T_t in timestamps:
+            counter += 1
+
             # Transform the image to [0, 1] to save image
             img_noisy = transform_range(img_noisy, img_noisy.min(), img_noisy.max(), 0, 1)
 
@@ -104,8 +117,6 @@ if __name__ == "__main__":
 
             # Add 1 to nullify the 0-indexing
             times[counter] = T_t + 1
-
-            counter += 1
 
             # Save the noisy image
             save_image(img_noisy, save_dir='poster', filename=f'noisy_{T_t+1}_image_{dataset}.png')
