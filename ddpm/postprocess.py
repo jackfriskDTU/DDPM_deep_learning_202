@@ -33,7 +33,7 @@ def transform_range(tensor, source_min=None, source_max=None, target_min=0, targ
     
     return transformed
 
-def sample_and_plot(model, betas, shape, device, time_dim, filename, dataset, beta_scheduler):
+def sample_and_plot(model, betas, shape, device, time_dim, filename, early_stopping, dataset, beta_scheduler):
     # Sample from the model
     sampled_img = sample(model, time_dim, betas, shape, device, stepwise=False, dataset=dataset, beta_scheduler=beta_scheduler)
 
@@ -46,7 +46,7 @@ def sample_and_plot(model, betas, shape, device, time_dim, filename, dataset, be
         img = img.permute(1, 2, 0)
         axes[i].imshow(img.detach().cpu().numpy(), cmap='gray')
         axes[i].axis('off')
-    fig.savefig(f'saved_images_{dataset}/{filename}.png')
+    fig.savefig(f'saved_images_{dataset}/{filename}_{early_stopping}.png')
 
 def save_image(image_tensor, save_dir, filename=None, index=0):
     try:

@@ -189,6 +189,7 @@ def train_model(train_loader,\
                  test_loader,\
                    model,\
                      device,\
+                     file_name,\
                        T=1000,\
                          beta_lower=1e-4,\
                            beta_upper=0.02,\
@@ -325,8 +326,8 @@ def train_model(train_loader,\
         if early_stopping and test_loss < best_loss:
             best_loss = test_loss
             best_epoch = epoch
-            print(f'Validation loss improved. Saving model weights to model_weights/es_{learning_rate}_{batch_size}_{num_epochs}.pt')
-            torch.save(model.state_dict(), f'model_weights/es_{learning_rate}_{batch_size}_{num_epochs}.pt')
+            print(f'Validation loss improved. Saving model weights to model_weights/{file_name}_{early_stopping}.pt')
+            torch.save(model.state_dict(), f'model_weights/{file_name}_{early_stopping}.pt')
             
             # if neptune_log:
             #     neptune_log["model/best_model"].upload(best_epoch)

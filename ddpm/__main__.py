@@ -49,7 +49,7 @@ def main(cfg: DictConfig):
     torch.manual_seed(seed)
     random.seed(seed)
 
-    file_name = f'{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{beta_scheduler}_{early_stopping}_{seed}_{time_dim}_{dataset}'
+    file_name = f'{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{beta_scheduler}_{seed}_{time_dim}_{dataset}'
 
     # Initialize Neptune
     run = None
@@ -73,12 +73,12 @@ def main(cfg: DictConfig):
         train, test = Preprocess.preprocess_dataset(batch_size, dataset, train_size, test_size)
 
         # Train the model
-        train_model(train, test, model, device, time_dim, beta_lower, beta_upper,\
+        train_model(train, test, model, device, file_name, time_dim, beta_lower, beta_upper,\
                      learning_rate, lr_scheduler, epochs, beta_scheduler, batch_size,\
                         early_stopping, optimizer, weight_decay, run)       
 
-        print(f"Saving model weights to {file_name}.pt")
-        torch.save(model.state_dict(), f'model_weights/{file_name}.pt')
+        print(f"Saving model weights to {file_name}_False.pt")
+        torch.save(model.state_dict(), f'model_weights/{file_name}_False.pt')
         
         # Remove train and test from memory
         del train
@@ -86,15 +86,15 @@ def main(cfg: DictConfig):
 
     if mode_sample:
         if early_stopping:
-            print(f"predicting with es_{learning_rate}_{batch_size}_{epochs}.pt")
-            model.load_state_dict(torch.load(f'model_weights/es_{learning_rate}_{batch_size}_{epochs}.pt',
+            print(f"predicting with {file_name}_{early_stopping}.pt")
+            model.load_state_dict(torch.load(f'model_weights/{file_name}_{early_stopping}.pt',
                                          map_location=torch.device('cuda'),
                                          weights_only=True))
 
         else:
-            print(f"predicting with {file_name}.pt")
+            print(f"predicting with {file_name}_False.pt")
             # Load the model weights
-            model.load_state_dict(torch.load(f'model_weights/{file_name}.pt',
+            model.load_state_dict(torch.load(f'model_weights/{file_name}_False.pt',
                                         map_location=torch.device('cuda'),
                                         weights_only=True))
         model.eval()
@@ -108,7 +108,7 @@ def main(cfg: DictConfig):
 
         with torch.no_grad():
             if sample_size > 1:
-                sample_and_plot(model, betas, shape, device, time_dim, file_name, dataset, beta_scheduler=beta_scheduler)
+                sample_and_plot(model, betas, shape, device, time_dim, file_name, early_stopping, dataset, beta_scheduler=beta_scheduler)
 
             else:
                 sampled_img = sample(model, time_dim, betas, shape, device, stepwise=False, dataset=dataset, beta_scheduler=beta_scheduler)
@@ -116,7 +116,7 @@ def main(cfg: DictConfig):
                 sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 
                 # Save the sampled image       
-                save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{file_name}.png')
+                save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{file_name}_{early_stopping}.png')
 
 if __name__ == "__main__":
     main()
