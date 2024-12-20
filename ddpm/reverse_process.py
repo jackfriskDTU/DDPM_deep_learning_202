@@ -4,7 +4,7 @@ from postprocess import *
 
 import matplotlib.pyplot as plt
 import numpy as np
-def sample(model, timesteps, betas, shape, device, stepwise, dataset):
+def sample(model, timesteps, betas, shape, device, stepwise, dataset, beta_scheduler):
     """
     Samples a new image from the learned reverse process.
     Args:
@@ -89,14 +89,14 @@ def sample(model, timesteps, betas, shape, device, stepwise, dataset):
                 counter += 1
 
                 # Save the noisy image
-                save_image(img_denoise, save_dir='poster', filename=f'denoise_{t+1}_image_{dataset}.png')
+                save_image(img_denoise, save_dir='poster', filename=f'denoise_{t+1}_image_{dataset}_{beta_scheduler}.png')
         torch.cuda.empty_cache()
 
     if stepwise:
         # Save the mean and stds to a csv file but reverse the order of mean and stds to match the forward process
         means = torch.flip(means, [0])
         stds = torch.flip(stds, [0])
-        np.savetxt(f'poster/mean_std_over_time_denoising_{dataset}.csv', np.column_stack((means.detach().cpu().numpy(), stds.detach().cpu().numpy())), delimiter=',', header='Mean,Std', comments='')
+        np.savetxt(f'poster/mean_std_over_time_denoising_{dataset}_{beta_scheduler}.csv', np.column_stack((means.detach().cpu().numpy(), stds.detach().cpu().numpy())), delimiter=',', header='Mean,Std', comments='')
         
         # Plot the means and stds over time side by side
         plt.figure(figsize=(12, 6))
@@ -117,7 +117,7 @@ def sample(model, timesteps, betas, shape, device, stepwise, dataset):
         plt.tick_params(axis='both', which='major', labelsize=12)
         plt.gca().invert_xaxis()
         plt.title('Std Dev of denoising over Time', fontsize=16)
-        plt.savefig(f'poster/mean_std_over_time_denoising_{dataset}.png')
+        plt.savefig(f'poster/mean_std_over_time_denoising_{dataset}_{beta_scheduler}.png')
         plt.close
 
         # Plot the noisy images in a grid
@@ -141,7 +141,7 @@ def sample(model, timesteps, betas, shape, device, stepwise, dataset):
                         f"Mean: {means[int(time) - 1]:.2f}, Std: {stds[int(time) - 1]:.2f}",
                         ha='center', va='center', 
                         transform=axes[row, col].transAxes, fontsize=8, color='#404040')
-        plt.savefig(f'poster/progressive_noise_denoising_{dataset}.png')
+        plt.savefig(f'poster/progressive_noise_denoising_{dataset}_{beta_scheduler}.png')
         plt.close
     return x_t
 
@@ -155,6 +155,7 @@ if __name__ == "__main__":
 
     # Example setup
     dataset = 'cifar10'
+    beta_scheduler = "Linear"
     if dataset == 'mnist':
         B, C, H, W = 1, 1, 28, 28 # Batch size, channels, height, width
         T = 500
@@ -171,7 +172,7 @@ if __name__ == "__main__":
     model.eval()
 
     # Sample from the model
-    sampled_img = sample(model, T, betas, shape, device, stepwise=True, dataset=dataset)
+    sampled_img = sample(model, T, betas, shape, device, stepwise=True, dataset=dataset, beta_scheduler=beta_scheduler)
 
     # sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 

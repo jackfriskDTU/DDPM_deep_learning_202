@@ -5,6 +5,7 @@ import pandas as pd
 
 from postprocess import *
 from preprocess import *
+from utils import get_beta_schedule
 import matplotlib.pyplot as plt
 
 def add_noise(df, betas, t, device):
@@ -39,6 +40,7 @@ def add_noise(df, betas, t, device):
 
 if __name__ == "__main__":
     ### Test Example ###
+    beta_scheduler = 'Linear'
     # Set seed to get same answer
     torch.manual_seed(1)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -47,7 +49,7 @@ if __name__ == "__main__":
     B, C, H, W = 2, 1, 3, 3  # Batch size, channels, height, width
     T = 10  # Number of timesteps
     df = torch.randn(B, C, H, W)  # Input tensor
-    betas = torch.linspace(1e-4, 0.02, T)  # Example linear beta schedule
+    betas = get_beta_schedule(beta_scheduler, T, device, beta_lower=1e-4, beta_upper=0.02)
     t = torch.randint(0, T, (B,)) # Random timesteps for each batch element
 
     # Add noise
@@ -69,7 +71,7 @@ if __name__ == "__main__":
         T = 1000
     elif dataset == 'mnist':
         T = 500
-    betas = torch.linspace(1e-4, 0.02, T, device=device)
+    betas = get_beta_schedule(beta_scheduler, T, device, beta_lower=1e-4, beta_upper=0.02)
 
     # Img, means and std as tensor, placeholders
     if dataset == 'mnist':
@@ -120,10 +122,10 @@ if __name__ == "__main__":
             times[counter] = T_t + 1
 
             # Save the noisy image
-            save_image(img_noisy, save_dir='poster', filename=f'noisy_{T_t+1}_image_{dataset}.png')
+            save_image(img_noisy, save_dir='poster', filename=f'noisy_{T_t+1}_image_{dataset}_{beta_scheduler}.png')
 
     # Read in other set of means and stds from .csv file
-    data = pd.read_csv(f'poster/mean_std_over_time_denoising_{dataset}.csv')
+    data = pd.read_csv(f'poster/mean_std_over_time_denoising_{dataset}_{beta_scheduler}.csv')
 
     # Extract the columns into variables
     mean_denoising = data['Mean'].values
@@ -145,7 +147,7 @@ if __name__ == "__main__":
     plt.ylabel('Standard Deviation', fontsize=14)
     plt.tick_params(axis='both', which='major', labelsize=12)
     plt.title('Std Dev of Image over Time', fontsize=16)
-    plt.savefig(f'poster/mean_std_over_time_diffusion_{dataset}.png')
+    plt.savefig(f'poster/mean_std_over_time_diffusion_{dataset}_{beta_scheduler}.png')
     plt.close
 
     # Plot the means and stds over time side by side with denoising as well
@@ -168,7 +170,7 @@ if __name__ == "__main__":
     plt.tick_params(axis='both', which='major', labelsize=12)
     plt.title('Std Dev of Image over Time', fontsize=16)
     plt.legend(fontsize=12)
-    plt.savefig(f'poster/mean_std_over_time_both_{dataset}.png')
+    plt.savefig(f'poster/mean_std_over_time_both_{dataset}_{beta_scheduler}.png')
     plt.close
     
     # Plot the noisy images in a grid
@@ -192,6 +194,6 @@ if __name__ == "__main__":
                     f"Mean: {means[int(time) - 1]:.2f}, Std: {stds[int(time) - 1]:.2f}",
                     ha='center', va='center', 
                     transform=axes[row, col].transAxes, fontsize=8, color='#404040')
-    plt.savefig(f'poster/progressive_noise_diffusion_{dataset}.png')
+    plt.savefig(f'poster/progressive_noise_diffusion_{dataset}_{beta_scheduler}.png')
     plt.close
     
