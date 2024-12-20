@@ -33,7 +33,8 @@ def add_noise(df, betas, t, device):
     # Scale the values of df (x0) as in equation (4), N(sqrt(a) * mu, (1-a)*I)
     # Return the input tensor with added noise
     df_noise = df * torch.sqrt(alpha_t_bar).view(-1, 1, 1, 1) \
-            + (noise * (1 - alpha_t_bar).view(-1, 1, 1, 1))
+               + noise * torch.sqrt(1 - alpha_t_bar).view(-1, 1, 1, 1)
+
     return df_noise, noise
 
 if __name__ == "__main__":
