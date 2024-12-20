@@ -2,7 +2,7 @@ from pathlib import Path
 import torch
 from torch import nn
 from torch import optim
-from torch.optim.lr_scheduler import StepLR, ExponentialLR, ReduceLROnPlateau, CosineAnnealingLR
+from torch.optim.lr_scheduler import StepLR, ExponentialLR, ReduceLROnPlateau, CosineAnnealingLR, CosineAnnealingWarmRestarts
 import math
 
 # Define the project root directory
@@ -49,7 +49,7 @@ def get_optimizer(model, optimizer_type = "Adam", learning_rate=1e-3, weight_dec
 
     return optimizer
 
-def get_scheduler(optimizer, scheduler_type):
+def get_scheduler(optimizer, scheduler_type, num_epochs):
     """
     Create a learning rate scheduler for the given optimizer.
 
@@ -75,8 +75,16 @@ def get_scheduler(optimizer, scheduler_type):
     elif scheduler_type == 'CosineAnnealingLR':
         scheduler = CosineAnnealingLR(
             optimizer,
-            T_max=50,
-            eta_min=1e-6
+            T_max=num_epochs,
+            eta_min=1e-7
+        )
+    
+    elif scheduler_type == 'CosineAnnealingWarmRestarts':
+        scheduler = CosineAnnealingWarmRestarts(
+            optimizer,
+            T_0=num_epochs//8,
+            T_mult=1.5,
+            eta_min=1e-7
         )
     elif scheduler_type == 'None':
         scheduler = None
