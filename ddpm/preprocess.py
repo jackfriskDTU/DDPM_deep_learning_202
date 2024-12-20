@@ -23,7 +23,7 @@ class Preprocess:
             # MNIST images are already [0,1], so just convert to tensor
             transform = transforms.Compose([
                 transforms.ToTensor(),
-                transforms.Normalize((0.5, (0.5)))
+                transforms.Normalize((0.5), (0.5))
             ])
             train_dataset = datasets.MNIST(root='../data', train=True, download=True, transform=transform)
             test_dataset = datasets.MNIST(root='../data', train=False, download=True, transform=transform)
