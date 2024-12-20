@@ -61,7 +61,7 @@ def get_scheduler(optimizer, scheduler_type):
         scheduler: The learning rate scheduler or None if no scheduler is selected.
     """
     if scheduler_type == 'StepLR':
-        scheduler = StepLR(optimizer, step_size=200, gamma=0.1)
+        scheduler = StepLR(optimizer, step_size=10, gamma=0.5)
     elif scheduler_type == 'ExponentialLR':
         scheduler = ExponentialLR(optimizer, gamma=0.9)
     elif scheduler_type == 'ReduceLROnPlateau':

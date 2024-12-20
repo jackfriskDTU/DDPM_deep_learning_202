@@ -4,17 +4,14 @@ from omegaconf import DictConfig
 import sys
 import torch
 import random
-import matplotlib.pyplot as plt
 
 import neptune
 
 from model import UNet, train_model
-from utils import set_project_root, init_weights, get_optimizer, loss_function
+from utils import set_project_root, init_weights, get_beta_schedule
 from preprocess import Preprocess 
 from postprocess import sample_and_plot, save_image, transform_range
-from forward_process import add_noise
 from reverse_process import sample
-from new_u import ScoreNetwork0, train_model0
 
 @hydra.main(config_path = "../config_files", config_name = "config", version_base = None)
 def main(cfg: DictConfig):
@@ -52,7 +49,7 @@ def main(cfg: DictConfig):
     torch.manual_seed(seed)
     random.seed(seed)
 
-    file_name = f'{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{beta_scheduler}_{early_stopping}_{seed}_{time_dim}_{dataset}.pt'
+    file_name = f'{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{beta_scheduler}_{early_stopping}_{seed}_{time_dim}_{dataset}'
 
     # Initialize Neptune
     run = None
@@ -102,7 +99,7 @@ def main(cfg: DictConfig):
                                         weights_only=True))
         model.eval()
 
-        betas = torch.linspace(beta_lower, beta_upper, time_dim, device=device)
+        betas = get_beta_schedule(beta_scheduler, time_dim, device, beta_lower=1e-4, beta_upper=0.02)
 
         if dataset == 'mnist':
             shape = (sample_size, in_channels, 28, 28)
@@ -111,10 +108,10 @@ def main(cfg: DictConfig):
 
         with torch.no_grad():
             if sample_size > 1:
-                sample_and_plot(model, betas, shape, device, time_dim, file_name, dataset)
+                sample_and_plot(model, betas, shape, device, time_dim, file_name, dataset, beta_scheduler=beta_scheduler)
 
             else:
-                sampled_img = sample(model, time_dim, betas, shape, device, stepwise=False, dataset=dataset)
+                sampled_img = sample(model, time_dim, betas, shape, device, stepwise=False, dataset=dataset, beta_scheduler=beta_scheduler)
                 sampled_img = sampled_img[0]
                 sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 
