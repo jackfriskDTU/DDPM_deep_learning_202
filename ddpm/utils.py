@@ -61,7 +61,7 @@ def get_scheduler(optimizer, scheduler_type, num_epochs):
         scheduler: The learning rate scheduler or None if no scheduler is selected.
     """
     if scheduler_type == 'StepLR':
-        scheduler = StepLR(optimizer, step_size=10, gamma=0.5)
+        scheduler = StepLR(optimizer, step_size=num_epochs//10, gamma=0.5)
     elif scheduler_type == 'ExponentialLR':
         scheduler = ExponentialLR(optimizer, gamma=0.9)
     elif scheduler_type == 'ReduceLROnPlateau':
@@ -118,3 +118,37 @@ def get_beta_schedule(schedule_type, T, device, beta_lower=1e-4, beta_upper=0.02
         return betas
     else:
         raise ValueError(f"Unknown beta scheduler type: {schedule_type}")
+    
+def sinusoidal_embedding(self, t, embed_dim):
+    """
+    Generates sinusoidal embeddings for the time step.
+    Args:
+        t (torch.Tensor): Input tensor of shape (batch_size,).
+        embed_dim (int): Dimensionality of the embedding.
+    Returns:
+        torch.Tensor: Sinusoidal embeddings of shape (batch_size, embed_dim).
+    """
+    device = t.device
+    half_dim = embed_dim // 2
+    emb = math.log(10000) / (half_dim - 1)
+    emb = torch.exp(torch.arange(half_dim, device=device) * -emb)
+    emb = t[:, None] * emb[None, :]
+    emb = torch.cat([torch.sin(emb), torch.cos(emb)], dim=-1)
+    return emb 
+
+class TimeEmbedding(nn.Module):
+    def __init__(self, time_embed_dim):
+        super().__init__()
+        self.mlp = nn.Sequential(
+            nn.Linear(time_embed_dim, time_embed_dim * 4),
+            nn.SiLU(),
+            nn.Linear(time_embed_dim * 4, time_embed_dim * 4),
+            nn.SiLU(),
+        )
+
+    def forward(self, t):
+        # t: (batch_size,)
+        emb = sinusoidal_embedding(t, self.mlp[0].in_features)
+        # emb shape: (batch_size, time_embed_dim)
+        emb = self.mlp(emb) # shape: (batch_size, time_embed_dim * 4)
+        return emb
