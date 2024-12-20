@@ -1,7 +1,9 @@
 from pathlib import Path
+import torch
 from torch import nn
 from torch import optim
 from torch.optim.lr_scheduler import StepLR, ExponentialLR, ReduceLROnPlateau, CosineAnnealingLR
+import math
 
 # Define the project root directory
 PROJECT_ROOT = Path(__file__).resolve()
@@ -59,7 +61,7 @@ def get_scheduler(optimizer, scheduler_type):
         scheduler: The learning rate scheduler or None if no scheduler is selected.
     """
     if scheduler_type == 'StepLR':
-        scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
+        scheduler = StepLR(optimizer, step_size=200, gamma=0.1)
     elif scheduler_type == 'ExponentialLR':
         scheduler = ExponentialLR(optimizer, gamma=0.9)
     elif scheduler_type == 'ReduceLROnPlateau':
@@ -80,3 +82,31 @@ def get_scheduler(optimizer, scheduler_type):
         scheduler = None
     
     return scheduler
+
+def get_beta_schedule(schedule_type, T, device, beta_lower=1e-4, beta_upper=0.02):
+    if schedule_type == "Linear":
+        # Classic linear schedule from DDPM
+        betas = torch.linspace(beta_lower, beta_upper, T, device=device)
+        return betas
+    
+    elif schedule_type == "Cosine":
+        # Cosine schedule from "Improved Denoising Diffusion Probabilistic Models"
+        # alpha_bar(t) = (cos(((t/T) + s) / (1+s) * (pi/2)))^2
+        s = 0.008  # small offset
+        steps = torch.arange(T, device=device, dtype=torch.float)
+        
+        # Compute alpha_bar at each timestep
+        alpha_bar = (torch.cos(((steps/T) + s) / (1 + s) * math.pi/2) ** 2)
+        
+        # alpha_bar[0] = 1.0 by definition. Now compute betas:
+        # alpha_bar(t) = alpha_t * alpha_bar(t-1)
+        # => alpha_t = alpha_bar(t)/alpha_bar(t-1)
+        # and beta_t = 1 - alpha_t
+        alpha_bar_shifted = torch.cat([torch.tensor([1.0], device=device), alpha_bar[:-1]])
+        alphas = alpha_bar / alpha_bar_shifted
+        betas = 1 - alphas
+        # Clip betas to ensure numerical stability
+        betas = torch.clamp(betas, min=1e-8, max=0.999)
+        return betas
+    else:
+        raise ValueError(f"Unknown beta scheduler type: {schedule_type}")

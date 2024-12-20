@@ -33,7 +33,7 @@ def transform_range(tensor, source_min=None, source_max=None, target_min=0, targ
     
     return transformed
 
-def sample_and_plot(model, betas, shape, device, train_size, test_size, optimizer, weight_decay, learning_rate, lr_scheduler, batch_size, epochs, early_stopping, seed, time_dim, dataset):
+def sample_and_plot(model, betas, shape, device, time_dim, filename, dataset):
     # Sample from the model
     sampled_img = sample(model, time_dim, betas, shape, device, stepwise=False, dataset=dataset)
 
@@ -46,7 +46,7 @@ def sample_and_plot(model, betas, shape, device, train_size, test_size, optimize
         img = img.permute(1, 2, 0)
         axes[i].imshow(img.detach().cpu().numpy(), cmap='gray')
         axes[i].axis('off')
-    fig.savefig(f'saved_images_{dataset}/{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{early_stopping}_{seed}_{time_dim}_{dataset}.png')
+    fig.savefig(f'saved_images_{dataset}/{filename}.png')
 
 def save_image(image_tensor, save_dir, filename=None, index=0):
     try:

@@ -195,6 +195,7 @@ def train_model(train_loader,\
                              learning_rate=1e-3,\
                                lr_scheduler = "None",\
                                  num_epochs=4,\
+                                  beta_scheduler = "Linear",\
                                    batch_size = 64,\
                                      early_stopping=False,\
                                        optimizer = "Adam",\
@@ -222,12 +223,13 @@ def train_model(train_loader,\
     # best epoch counter
     best_epoch = 0
 
-    # Define the beta schedule
-    betas = torch.linspace(beta_lower, beta_upper, T, device=device)
+    # get the beta schedule
+    betas = utils.get_beta_schedule(beta_scheduler, T, device, beta_lower, beta_upper)
 
     # Get the optimizer
     optimizer = utils.get_optimizer(model, optimizer, learning_rate, weight_decay=weight_decay)
 
+    # Get the learning rate scheduler
     lr_scheduler = utils.get_scheduler(optimizer, lr_scheduler)
 
     # Start training

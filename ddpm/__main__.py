@@ -43,6 +43,7 @@ def main(cfg: DictConfig):
     lr_scheduler = cfg.training.lr_scheduler
     batch_size = cfg.training.batch_size
     epochs = cfg.training.epochs
+    beta_scheduler = cfg.training.beta_scheduler
     beta_lower = cfg.training.beta_lower
     beta_upper = cfg.training.beta_upper
     early_stopping = cfg.training.early_stopping
@@ -50,6 +51,8 @@ def main(cfg: DictConfig):
 
     torch.manual_seed(seed)
     random.seed(seed)
+
+    file_name = f'{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{beta_scheduler}_{early_stopping}_{seed}_{time_dim}_{dataset}.pt'
 
     # Initialize Neptune
     run = None
@@ -74,12 +77,11 @@ def main(cfg: DictConfig):
 
         # Train the model
         train_model(train, test, model, device, time_dim, beta_lower, beta_upper,\
-                     learning_rate, lr_scheduler, epochs, batch_size, early_stopping,\
-                         optimizer, weight_decay, run)       
-        
-        print(f"Saving model weights to {train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{early_stopping}_{seed}_{time_dim}_{dataset}.pt")
-        torch.save(model.state_dict(),\
-                    f'model_weights/{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{early_stopping}_{seed}_{time_dim}_{dataset}.pt')
+                     learning_rate, lr_scheduler, epochs, beta_scheduler, batch_size,\
+                        early_stopping, optimizer, weight_decay, run)       
+
+        print(f"Saving model weights to {file_name}.pt")
+        torch.save(model.state_dict(), f'model_weights/{file_name}.pt')
         
         # Remove train and test from memory
         del train
@@ -93,10 +95,9 @@ def main(cfg: DictConfig):
                                          weights_only=True))
 
         else:
-            print(f"predicting with {train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{early_stopping}_{seed}_{time_dim}_{dataset}.pt")
+            print(f"predicting with {file_name}.pt")
             # Load the model weights
-            model.load_state_dict(torch.load(\
-                f'model_weights/{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{True}_{seed}_{time_dim}_{dataset}.pt',
+            model.load_state_dict(torch.load(f'model_weights/{file_name}.pt',
                                         map_location=torch.device('cuda'),
                                         weights_only=True))
         model.eval()
@@ -109,8 +110,8 @@ def main(cfg: DictConfig):
             shape = (sample_size, in_channels, 32, 32)
 
         with torch.no_grad():
-            if sample_size > 1:# Save the sampled image
-                sample_and_plot(model, betas, shape, device, train_size, test_size, optimizer, weight_decay, learning_rate, lr_scheduler, batch_size, epochs, early_stopping, seed, time_dim, dataset)
+            if sample_size > 1:
+                sample_and_plot(model, betas, shape, device, time_dim, file_name, dataset)
 
             else:
                 sampled_img = sample(model, time_dim, betas, shape, device, stepwise=False, dataset=dataset)
@@ -118,8 +119,7 @@ def main(cfg: DictConfig):
                 sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 
                 # Save the sampled image       
-                save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{train_size}_{test_size}_{optimizer}_{weight_decay}_{learning_rate}_{lr_scheduler}_{batch_size}_{epochs}_{early_stopping}_{seed}_{time_dim}_{dataset}.png')
+                save_image(sampled_img, save_dir=f'saved_images_{dataset}', filename=f'{file_name}.png')
 
 if __name__ == "__main__":
     main()
-
