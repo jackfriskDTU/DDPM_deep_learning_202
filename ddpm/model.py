@@ -230,7 +230,7 @@ def train_model(train_loader,\
     optimizer = utils.get_optimizer(model, optimizer, learning_rate, weight_decay=weight_decay)
 
     # Get the learning rate scheduler
-    lr_scheduler = utils.get_scheduler(optimizer, lr_scheduler)
+    lr_scheduler = utils.get_scheduler(optimizer, lr_scheduler, num_epochs)
 
     # Start training
     for epoch in range(num_epochs):
