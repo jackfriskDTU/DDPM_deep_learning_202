@@ -39,14 +39,12 @@ DDPM_Repo/
 │  ├─ preprocess.py         # Loading & normalizing MNIST/CIFAR-10
 │  ├─ postprocess.py        # Image saving, plotting, etc.
 ├─ config_files/
-│  ├─ config.yaml           # Main configuration (hyperparams, dataset, scheduler)
-│  ├─ other_configs.yaml    # Additional config variations
-├─ notebooks/
-│  ├─ ddpm_demo.ipynb       # Example notebook showcasing usage
-├─ model_weights/           # Folder where trained weights are saved
-├─ requirements.txt         # Python dependencies
-├─ README.md                # This readme
-└─ setup.py (optional)      # For pip install -e .
+│  └─ config.yaml           # Main configuration (hyperparams, dataset, scheduler)
+├─ tutorial.ipynb           # Example notebook showcasing usage
+├─ weights/                 # Folder where trained weights are saved
+├─ model_weights/           # Folder where new trained model weights are saved
+├─ environment.yml          # Python dependencies
+└─ README.md                # This readme
 ```
 
 - **`ddpm/`**: Main Python package with code for training, sampling, and models.
@@ -66,7 +64,7 @@ DDPM_Repo/
 
 2. **Install Dependencies**:
    ```bash
-   conda install -f requirements.txt
+   conda install -f environment.yml
    ```
 
 ---
