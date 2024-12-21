@@ -1,7 +1,3 @@
-Below is a concise **README.md** template for your GitHub repository, giving an overview of the project structure, how to install and run the code, and how the configuration system works. Feel free to adjust folder names, references, and commands to match your actual setup.
-
----
-
 # DDPM Implementation
 
 This repository contains a custom **Denoising Diffusion Probabilistic Model (DDPM)** implementation built in PyTorch.  
@@ -24,7 +20,7 @@ We train and sample images on **MNIST** (28×28, grayscale) and **CIFAR-10** (32
 - **Sinusoidal Time Embeddings** for conditioning the U-Net on the diffusion timestep.
 - **Flexible Beta Schedules** (linear and cosine).
 - **Learning Rate Schedulers** (e.g., StepLR, ReduceLROnPlateau).
-- **Mixed Precision Training** (optional) for faster inference and reduced memory usage.
+- **Mixed Precision Training** for faster inference and reduced memory usage.
 - **Preprocessing** pipelines for MNIST and CIFAR-10, normalizing images to \([-1, 1]\).
 
 ---
@@ -55,8 +51,8 @@ DDPM_Repo/
 
 - **`ddpm/`**: Main Python package with code for training, sampling, and models.
 - **`config_files/`**: YAML configs containing hyperparameters, dataset choices, and scheduler settings.
-- **`model_weights/`**: Pretrained or intermediate weights saved during training.
-- **`notebooks/`**: Jupyter notebooks for demos or experiments.
+- **`weights/`**: Pretrained weights.
+- **`notebooks/`**: Jupyter notebooks for demo.
 
 ---
 
@@ -64,53 +60,51 @@ DDPM_Repo/
 
 1. **Clone the Repo**:
    ```bash
-   git clone https://github.com/yourusername/DDPM_Repo.git
-   cd DDPM_Repo
+   git clone https://github.com/jackfriskDTU/DDPM_deep_learning_202.git
+   cd DDPM_deep_learning_202
    ```
 
 2. **Install Dependencies**:
    ```bash
-   pip install -r requirements.txt
+   conda install -f requirements.txt
    ```
-   If you use conda or another environment manager, create an environment first, then install.
-
-3. **(Optional) Editable Install**:
-   ```bash
-   pip install -e .
-   ```
-   This lets you do `import ddpm` from anywhere, and helps with relative imports.
 
 ---
 
 ## Configuration
 
-We use simple YAML files (in `config_files/`) to handle parameters. For example, `config.yaml` might contain:
+We use simple YAML files (in `config_files/`) to handle parameters. For example, `config.yaml` contain:
 
 ```yaml
+defaults:
+  - _self_
+
 mode:
-  dataset: cifar10
-  train: true
-  sample: false
-  sample_size: 4
+  train: False
+  sample: True
+  dataset: "cifar10" # "mnist" or "cifar10"
+  sample_size: 10
 
 model:
   in_channels: 3
   out_channels: 3
-  time_dim: 1000
+  time_dim: 750
+  seed: 42
 
 training:
-  train_size: 50000
-  test_size: 10000
-  optimizer: Adam
-  weight_decay: 0.0
-  learning_rate: 1e-4
-  lr_scheduler: StepLR
+  train_size: 25600 # cifar10: 49920, mnist: 48000
+  test_size: 2560 # cifar10: 8320, mnist: 9600
+  optimizer: Adam # Adam, SGD
+  weight_decay: 0.0 # 1e-4, 1e-2
+  learning_rate: 0.01
+  lr_scheduler: ReduceLROnPlateau # None, StepLR, ExponentialLR, ReduceLROnPlateau, CosineAnnealingLR, CosineAnnealingWarmRestarts
   batch_size: 128
-  epochs: 50
-  beta_lower: 1e-4
+  epochs: 200
+  beta_scheduler: "Cosine" # Linear, Cosine
+  beta_lower: 0.0001 
   beta_upper: 0.02
-  early_stopping: false
-  beta_scheduler: cosine
+  early_stopping: False
+  neptune: False
   ...
 ```
 
@@ -124,38 +118,25 @@ You can create additional YAML files for different experiments (e.g., a linear b
 
 ## Usage
 
-### 1. Command-Line Execution
+### 1. Running as module
 
 - **Train** using the default config:
   ```bash
-  python ddpm/__main__.py \
-    mode.train=true mode.sample=false \
-    model.in_channels=3 training.epochs=50
+  python -m ddpm
   ```
-  *(If you have Hydra or a similar library, adapt accordingly.)*
-
+  
 - **Sample** after training:
+  turn off training in the config
   ```bash
-  python ddpm/__main__.py \
-    mode.train=false mode.sample=true \
-    mode.sample_size=8
+  python -m ddpm
   ```
-
-*(Adjust keys to match your config structure.)*
-
-### 2. Running as a Module
-From the project root:
-```bash
-python -m ddpm
-```
-This entry point typically looks for a `config.yaml` or uses command-line overrides.
 
 ### 3. Notebook Demo
 Open `notebooks/ddpm_demo.ipynb` to see a step-by-step example of:
 - Loading the model,
 - Training on a small subset,
 - Sampling from the trained model,
-- Visualizing results.
+- Traning a new model.
 
 ---
 
@@ -174,18 +155,16 @@ Open `notebooks/ddpm_demo.ipynb` to see a step-by-step example of:
 
 ## Sampling
 
-Use `ddpm.reverse_process.sample` (or the CLI, if you’ve configured your scripts) to:
+Use `ddpm.reverse_process.sample` to:
 1. Initialize random noise `x_T`.
 2. Iteratively denoise until an image `x_0` emerges.
 3. Save or visualize the result.  
-
-Images are typically clamped to `[0,1]` before saving.
 
 ---
 
 ## Citation
 
-If you build upon or reference this code, please cite the original DDPM paper:
+This repository is adapted with inspiration from the original DDPM paper:
 
 ```
 @inproceedings{ho2020denoising,
