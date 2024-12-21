@@ -183,3 +183,5 @@ model_weights/
 
 # submit script
 ./submit_main.sh
+
+.vscode
