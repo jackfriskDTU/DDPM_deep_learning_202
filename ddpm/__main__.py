@@ -16,7 +16,7 @@ from forward_process import add_noise
 from reverse_process import sample
 from new_u import ScoreNetwork0, train_model0
 
-@hydra.main(config_path = "../config_files", config_name = "config", version_base = None)
+@hydra.main(config_path = "../config_files", config_name = "config_esben", version_base = None)
 def main(cfg: DictConfig):
 
     # Set the project root directory
@@ -113,7 +113,7 @@ def main(cfg: DictConfig):
             sample_and_plot(model, betas, shape, device, train_size, test_size, optimizer, weight_decay, learning_rate, lr_scheduler, batch_size, epochs, early_stopping, seed, time_dim, dataset)
 
         else:
-            sampled_img = sample(model, time_dim, betas, shape, device, stepwise=False)
+            sampled_img = sample(model, time_dim, betas, shape, device)
             sampled_img = sampled_img[0]
             sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
 
