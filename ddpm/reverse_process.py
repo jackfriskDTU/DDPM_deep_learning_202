@@ -42,7 +42,7 @@ def sample(model, timesteps, betas, shape, device, stepwise, dataset, beta_sched
         
         # These are the timesteps to save the images
         if dataset == 'cifar10':
-            timestamps = [999, 749, 499, 199, 99, 0]
+            timestamps = [749, 499, 299, 199, 99, 0]
         elif dataset == 'mnist':
             timestamps = [499, 199, 149, 99, 49, 0]
 
@@ -94,9 +94,10 @@ def sample(model, timesteps, betas, shape, device, stepwise, dataset, beta_sched
 
     if stepwise:
         # Save the mean and stds to a csv file but reverse the order of mean and stds to match the forward process
-        means = torch.flip(means, [0])
-        stds = torch.flip(stds, [0])
-        np.savetxt(f'poster/mean_std_over_time_denoising_{dataset}_{beta_scheduler}.csv', np.column_stack((means.detach().cpu().numpy(), stds.detach().cpu().numpy())), delimiter=',', header='Mean,Std', comments='')
+        np.savetxt(f'poster/mean_std_over_time_denoising_{dataset}_{beta_scheduler}.csv',
+                   np.column_stack((torch.flip(means, [0]).detach().cpu().numpy(),
+                                    torch.flip(stds, [0]).detach().cpu().numpy())),
+                                    delimiter=',', header='Mean,Std', comments='')
         
         # Plot the means and stds over time side by side
         plt.figure(figsize=(12, 6))
@@ -150,7 +151,7 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Set seed to get same answer
-    seed = 1
+    seed = 865423
     torch.manual_seed(seed)
 
     # Example setup
@@ -158,17 +159,17 @@ if __name__ == "__main__":
     beta_scheduler = "Cosine"
     if dataset == 'mnist':
         B, C, H, W = 1, 1, 28, 28 # Batch size, channels, height, width
-        T = 500
+        T = 750
     elif dataset == 'cifar10':
         B, C, H, W = 1, 3, 32, 32  # Batch size, channels, height, width
-        T = 1000
+        T = 750
     betas = torch.linspace(1e-4, 0.02, T)  # Example linear beta schedule
     shape = (B, C, H, W)
     
     # Load the model weights
     model = model.UNet(C, C)  # Adjust the parameters as needed
     model.to(device)
-    model.load_state_dict(torch.load('model_weights/12800_1280_Adam_0.0001_0.001_StepLR_128_100_Cosine_1_500_mnist_True.pt', map_location=torch.device('cuda'), weights_only=False))
+    model.load_state_dict(torch.load('model_weights/12800_1280_Adam_0.0001_0.001_StepLR_128_100_Cosine_1_750_mnist_True.pt', map_location=torch.device('cuda'), weights_only=False))
     model.eval()
 
     # Sample from the model
