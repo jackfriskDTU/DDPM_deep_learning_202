@@ -89,7 +89,7 @@ def sample(model, timesteps, betas, shape, device, stepwise, dataset, beta_sched
                 counter += 1
 
                 # Save the noisy image
-                save_image(img_denoise, save_dir='poster', filename=f'denoise_{t+1}_image_{dataset}_{beta_scheduler}.png')
+                # save_image(img_denoise, save_dir='poster', filename=f'denoise_{t+1}_image_{dataset}_{beta_scheduler}.png')
         torch.cuda.empty_cache()
 
     if stepwise:
@@ -154,8 +154,8 @@ if __name__ == "__main__":
     torch.manual_seed(seed)
 
     # Example setup
-    dataset = 'cifar10'
-    beta_scheduler = "Linear"
+    dataset = 'mnist'
+    beta_scheduler = "Cosine"
     if dataset == 'mnist':
         B, C, H, W = 1, 1, 28, 28 # Batch size, channels, height, width
         T = 500
@@ -168,7 +168,7 @@ if __name__ == "__main__":
     # Load the model weights
     model = model.UNet(C, C)  # Adjust the parameters as needed
     model.to(device)
-    model.load_state_dict(torch.load('model_weights/12800_1280_Adam_0.001_0.001_StepLR_128_25_True_1_1000_cifar10.pt', map_location=torch.device('cuda'), weights_only=False))
+    model.load_state_dict(torch.load('model_weights/12800_1280_Adam_0.0001_0.001_StepLR_128_100_Cosine_1_500_mnist_True.pt', map_location=torch.device('cuda'), weights_only=False))
     model.eval()
 
     # Sample from the model
