@@ -11,19 +11,19 @@ model:
   in_channels: 3
   out_channels: 3
   time_dim: 750
-  seed: 1
+  seed: 42
 
 training:
-  train_size: 49920 # cifar10: 49920, mnist: 48000
-  test_size: 8320 # cifar10: 8320, mnist: 9600
+  train_size: 25600 # cifar10: 49920, mnist: 48000
+  test_size: 2560 # cifar10: 8320, mnist: 9600
   optimizer: Adam # Adam, SGD
-  weight_decay: 0.0001 # 1e-4, 1e-2
-  learning_rate: 0.1
-  lr_scheduler: CosineAnnealingWarmRestarts # None, StepLR, ExponentialLR, ReduceLROnPlateau, CosineAnnealingLR, CosineAnnealingWarmRestarts
+  weight_decay: 0.0 # 1e-4, 1e-2
+  learning_rate: 0.01
+  lr_scheduler: ReduceLROnPlateau # None, StepLR, ExponentialLR, ReduceLROnPlateau, CosineAnnealingLR, CosineAnnealingWarmRestarts
   batch_size: 128
   epochs: 200
   beta_scheduler: "Cosine" # Linear, Cosine
   beta_lower: 0.0001 
   beta_upper: 0.02
-  early_stopping: True
+  early_stopping: False
   neptune: False

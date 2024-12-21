@@ -69,14 +69,13 @@ def get_scheduler(optimizer, scheduler_type, num_epochs):
             optimizer,
             mode="min",
             factor=0.5,
-            patience=5,
-            verbose=True
+            patience=15
         )
     elif scheduler_type == 'CosineAnnealingLR':
         scheduler = CosineAnnealingLR(
             optimizer,
-            T_max=num_epochs,
-            eta_min=1e-7
+            T_max=num_epochs - num_epochs//8,
+            eta_min=1e-9
         )
     
     elif scheduler_type == 'CosineAnnealingWarmRestarts':
@@ -84,7 +83,7 @@ def get_scheduler(optimizer, scheduler_type, num_epochs):
             optimizer,
             T_0=num_epochs//8,
             T_mult=2,
-            eta_min=1e-7
+            eta_min=1e-9
         )
     elif scheduler_type == 'None':
         scheduler = None
