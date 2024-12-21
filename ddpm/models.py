@@ -329,9 +329,9 @@ def train_model(train_loader,\
                 print('Early stopping')
                 break
 
-        if lr_scheduler == "ReduceLROnPlateau":
+        if isinstance(lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
             lr_scheduler.step(test_loss)
-        elif lr_scheduler != None:
+        elif lr_scheduler is not None:
             lr_scheduler.step()
 
     print("Finished training.")
