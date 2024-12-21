@@ -130,7 +130,7 @@ You can create additional YAML files for different experiments (e.g., a linear b
   ```
 
 ### 3. Notebook Demo
-Open `notebooks/ddpm_demo.ipynb` to see a step-by-step example of:
+Open `tutorial.ipynb` to see a step-by-step example of:
 - Loading the model,
 - Training on a small subset,
 - Sampling from the trained model,
