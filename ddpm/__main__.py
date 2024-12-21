@@ -7,11 +7,11 @@ import random
 
 import neptune
 
-from model import UNet, train_model
-from utils import set_project_root, init_weights, get_beta_schedule
-from preprocess import Preprocess 
-from postprocess import sample_and_plot, save_image, transform_range
-from reverse_process import sample
+from .models import UNet, train_model
+from .utils import set_project_root, init_weights, get_beta_schedule
+from .preprocess import Preprocess 
+from .postprocess import sample_and_plot, save_image, transform_range
+from .reverse_process import sample
 
 @hydra.main(config_path = "../config_files", config_name = "config", version_base = None)
 def main(cfg: DictConfig):

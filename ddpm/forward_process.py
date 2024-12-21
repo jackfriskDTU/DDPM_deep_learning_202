@@ -3,9 +3,9 @@ import sys
 import numpy as np
 import pandas as pd
 
-from postprocess import *
-from preprocess import *
-from utils import get_beta_schedule
+# from postprocess import *
+# from preprocess import *
+# from utils import get_beta_schedule
 import matplotlib.pyplot as plt
 
 def add_noise(df, betas, t, device):

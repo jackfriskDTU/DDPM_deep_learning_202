@@ -1,6 +1,6 @@
 import torch
-import model
-from postprocess import *
+# import model
+# from postprocess import *
 
 import matplotlib.pyplot as plt
 import numpy as np

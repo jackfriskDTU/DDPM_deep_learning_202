@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import os
 from PIL import Image
 from torchvision import transforms
-from reverse_process import sample
+from .reverse_process import sample
 
 def transform_range(tensor, source_min=None, source_max=None, target_min=0, target_max=255):
     """
@@ -48,6 +48,39 @@ def sample_and_plot(model, betas, shape, device, time_dim, filename, early_stopp
         axes[i].axis('off')
     fig.savefig(f'saved_images_{dataset}/{filename}_{early_stopping}.png')
 
+def demo_sample_and_plot(model, betas, shape, device, time_dim, sample_size, dataset, beta_scheduler, filename):
+    # Sample from the model
+    sampled_img = sample(model, time_dim, betas, shape, device, stepwise=False, dataset=dataset, beta_scheduler=beta_scheduler)
+
+    # Determine the number of rows needed
+    num_rows = (sample_size + 9) // 10  # This ensures we have enough rows for all images
+    if sample_size >= 10:
+        fig, axes = plt.subplots(num_rows, 10, figsize=(15, 3 * num_rows), squeeze=False)
+    else:
+        fig, axes = plt.subplots(num_rows, sample_size, figsize=(15, 3), squeeze=False)
+
+    for i in range(sample_size):
+        row = i // 10
+        col = i % 10
+        img = sampled_img[i]
+        img = transform_range(img, img.min(), img.max(), 0, 1)
+        img = img.permute(1, 2, 0)
+        axes[row, col].imshow(img.detach().cpu().numpy(), cmap='gray')
+        axes[row, col].axis('off')
+    
+    # Hide any unused subplots
+    for j in range(sample_size, num_rows * 10):
+        row = j // 10
+        col = j % 10
+        try:
+            axes[row, col].axis('off')
+        except IndexError:
+            continue
+    fig.tight_layout()
+    plt.show()
+    fig.savefig(f'{filename}.png')
+    plt.close(fig)
+
 def save_image(image_tensor, save_dir, filename=None, index=0):
     try:
         os.makedirs(save_dir, exist_ok=True)
@@ -61,7 +94,7 @@ def save_image(image_tensor, save_dir, filename=None, index=0):
         
         image_pil.save(save_path)
         print(f"Image saved successfully to {save_path}")
-        
+        image_pil.show()
         return save_path
         
     except Exception as e:

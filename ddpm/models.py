@@ -3,10 +3,10 @@ import torch.nn as nn
 from torch import GradScaler, autocast
 
 import sys
-import utils
+from .utils import init_weights, loss_function, get_optimizer, get_scheduler, get_beta_schedule, TimeEmbedding
 import math
-from preprocess import *
-from forward_process import *
+from .preprocess import *
+from .forward_process import *
 
 import matplotlib.pyplot as plt
 
@@ -57,7 +57,7 @@ class UNet(nn.Module):
             self.num_params = [64, 128, 256, 512]
 
         self.time_embed_dim = self.num_params[0]
-        self.time_mlp = utils.TimeEmbedding(self.time_embed_dim)
+        self.time_mlp = TimeEmbedding(self.time_embed_dim)
 
         # Create linear layers that map from time_embed_dim*4 to the appropriate number of channels
         self.time_linear_1 = nn.Linear(self.time_embed_dim * 4, self.num_params[0])
@@ -210,13 +210,13 @@ def train_model(train_loader,\
     best_epoch = 0
 
     # get the beta schedule
-    betas = utils.get_beta_schedule(beta_scheduler, T, device, beta_lower, beta_upper)
+    betas = get_beta_schedule(beta_scheduler, T, device, beta_lower, beta_upper)
 
     # Get the optimizer
-    optimizer = utils.get_optimizer(model, optimizer, learning_rate, weight_decay=weight_decay)
+    optimizer = get_optimizer(model, optimizer, learning_rate, weight_decay=weight_decay)
 
     # Get the learning rate scheduler
-    lr_scheduler = utils.get_scheduler(optimizer, lr_scheduler, num_epochs)
+    lr_scheduler = get_scheduler(optimizer, lr_scheduler, num_epochs)
 
     # Mixed Precision Training
     # prevent underflow and handle loss scaling automatically
@@ -249,7 +249,7 @@ def train_model(train_loader,\
                 # Forward pass
                 predicted_noise = model.forward(batch_noised, t, verbose=False)
                 # Compute loss
-                loss = utils.loss_function(predicted_noise, noise)
+                loss = loss_function(predicted_noise, noise)
     
             # Compute gradients based on the loss from the current batch (backpropagation).
             scaler.scale(loss).backward()
@@ -291,7 +291,7 @@ def train_model(train_loader,\
                 predicted_noise = model.forward(batch_noised, t, verbose=False)
                 
                 # Compute loss
-                loss = utils.loss_function(predicted_noise, noise)
+                loss = loss_function(predicted_noise, noise)
                 
                 # Save the loss
                 test_loss.append(loss.item())
@@ -350,7 +350,7 @@ if __name__ == '__main__':
 
     BATCH_SIZE = 10
     model = UNet(1, 1)
-    model.apply(utils.init_weights)
+    model.apply(init_weights)
     model.to(device)
 
     train_loader, _ = Preprocess.preprocess_dataset(BATCH_SIZE, 'mnist')
