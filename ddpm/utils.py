@@ -83,7 +83,7 @@ def get_scheduler(optimizer, scheduler_type, num_epochs):
         scheduler = CosineAnnealingWarmRestarts(
             optimizer,
             T_0=num_epochs//8,
-            T_mult=1.5,
+            T_mult=2,
             eta_min=1e-7
         )
     elif scheduler_type == 'None':
@@ -119,7 +119,7 @@ def get_beta_schedule(schedule_type, T, device, beta_lower=1e-4, beta_upper=0.02
     else:
         raise ValueError(f"Unknown beta scheduler type: {schedule_type}")
     
-def sinusoidal_embedding(self, t, embed_dim):
+def sinusoidal_embedding(t, embed_dim):
     """
     Generates sinusoidal embeddings for the time step.
     Args:
