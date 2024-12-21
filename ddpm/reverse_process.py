@@ -1,6 +1,4 @@
 import torch
-# import model
-# from postprocess import *
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,7 +23,7 @@ def sample(model, timesteps, betas, shape, device, stepwise, dataset, beta_sched
     # Start from Gaussian noise
     x_t = torch.randn_like(df, device=device)
 
-    if stepwise: # This if is not needed, but to clarify it is used for stepwise plotting
+    if stepwise: # This is used for stepwise plotting
         # Placeholders for saving at different timestep
         if dataset == 'mnist':
             images = torch.zeros((6, shape[2], shape[3]), device=device)
@@ -41,10 +39,7 @@ def sample(model, timesteps, betas, shape, device, stepwise, dataset, beta_sched
         stds[0] = x_t.std()
         
         # These are the timesteps to save the images
-        if dataset == 'cifar10':
-            timestamps = [749, 499, 299, 199, 99, 0]
-        elif dataset == 'mnist':
-            timestamps = [499, 199, 149, 99, 49, 0]
+        timestamps = [749, 499, 299, 199, 99, 0] # [19, 49, 99, 249, 499], [99, 199, 299, 499, 749]
 
     for t in reversed(range(timesteps)):
         # Ensure t is a tensor
@@ -62,7 +57,7 @@ def sample(model, timesteps, betas, shape, device, stepwise, dataset, beta_sched
 
         # # Calculate the posterior mean estimate for x_{t-1}
         alpha_t = alphas[t]
-        alpha_t_bar = alphas_cumulative[t] #if t > 0 else torch.tensor(1.0)
+        alpha_t_bar = alphas_cumulative[t]
 
         frac = (betas[t]) / torch.sqrt(1 - alpha_t_bar)   
 
@@ -87,9 +82,6 @@ def sample(model, timesteps, betas, shape, device, stepwise, dataset, beta_sched
                 times[counter] = t + 1
 
                 counter += 1
-
-                # Save the noisy image
-                # save_image(img_denoise, save_dir='poster', filename=f'denoise_{t+1}_image_{dataset}_{beta_scheduler}.png')
         torch.cuda.empty_cache()
 
     if stepwise:
@@ -147,35 +139,31 @@ def sample(model, timesteps, betas, shape, device, stepwise, dataset, beta_sched
     return x_t
 
 if __name__ == "__main__":
-    # Get device
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    import models
+    from postprocess import transform_range
+    from utils import get_beta_schedule
 
-    # Set seed to get same answer
-    seed = 865423
-    torch.manual_seed(seed)
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    torch.manual_seed(865423)
 
     # Example setup
     dataset = 'mnist'
     beta_scheduler = "Cosine"
+    T = 750
+
     if dataset == 'mnist':
         B, C, H, W = 1, 1, 28, 28 # Batch size, channels, height, width
-        T = 750
     elif dataset == 'cifar10':
         B, C, H, W = 1, 3, 32, 32  # Batch size, channels, height, width
-        T = 750
-    betas = torch.linspace(1e-4, 0.02, T)  # Example linear beta schedule
+        
+    betas = get_beta_schedule(beta_scheduler, T, device, beta_lower=1e-4, beta_upper=0.02)
     shape = (B, C, H, W)
     
     # Load the model weights
-    model = model.UNet(C, C)  # Adjust the parameters as needed
+    model = models.UNet(C, C)  # Adjust the parameters as needed
     model.to(device)
     model.load_state_dict(torch.load('model_weights/12800_1280_Adam_0.0001_0.001_StepLR_128_100_Cosine_1_750_mnist_True.pt', map_location=torch.device('cuda'), weights_only=False))
     model.eval()
 
     # Sample from the model
-    sampled_img = sample(model, T, betas, shape, device, stepwise=True, dataset=dataset, beta_scheduler=beta_scheduler)
-
-    # sampled_img = transform_range(sampled_img, sampled_img.min(), sampled_img.max(), 0, 1)
-
-    ## Save the image
-    # save_image(sampled_img, save_dir='saved_images_reverse', filename=f'{seed}_3updated_sampled_image.png')
+    sample(model, T, betas, shape, device, stepwise=True, dataset=dataset, beta_scheduler=beta_scheduler)

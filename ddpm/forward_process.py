@@ -1,11 +1,6 @@
 import torch
-import sys
-import numpy as np
 import pandas as pd
 
-# from postprocess import *
-# from preprocess import *
-# from utils import get_beta_schedule
 import matplotlib.pyplot as plt
 
 def add_noise(df, betas, t, device):
@@ -39,40 +34,28 @@ def add_noise(df, betas, t, device):
     return df_noise, noise
 
 if __name__ == "__main__":
+    from postprocess import *
+    from preprocess import *
+    from utils import get_beta_schedule
+    
     ### Test Example ###
-    beta_scheduler = 'Linear'
-    # Set seed to get same answer
     torch.manual_seed(1)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # Example setup
-    B, C, H, W = 2, 1, 3, 3  # Batch size, channels, height, width
-    T = 10  # Number of timesteps
-    df = torch.randn(B, C, H, W)  # Input tensor
-    betas = get_beta_schedule(beta_scheduler, T, device, beta_lower=1e-4, beta_upper=0.02)
-    t = torch.randint(0, T, (B,)) # Random timesteps for each batch element
-
-    # Add noise
-    df_noised, noise = add_noise(df, betas, t, device)
-
-
-    ### Example with actual data ###
+    ### To generate plots ###
+    beta_scheduler = 'Linear'
     dataset = 'cifar10'
+    T = 750
+    betas = get_beta_schedule(beta_scheduler, T, device, beta_lower=1e-4, beta_upper=0.02)
+
     # Load data #
     train_loader, test_loader = Preprocess.preprocess_dataset(64, dataset)
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    # Get a sample image and label
     img, _ = train_loader.dataset[1] # Set to one to get a nice zero
     img.to(device)
  
     # Add batch dimension to img to make it work with add_noise()
     img = img.unsqueeze(0)
-    if dataset == 'cifar10':
-        T = 500
-    elif dataset == 'mnist':
-        T = 500
-    betas = get_beta_schedule(beta_scheduler, T, device, beta_lower=1e-4, beta_upper=0.02)
-
+    
     # Img, means and std as tensor, placeholders
     if dataset == 'mnist':
         images = torch.zeros((6, 28, 28))
@@ -90,11 +73,7 @@ if __name__ == "__main__":
     stds[counter] = img.std()
 
     # These are the timesteps to save the images
-    if dataset == 'cifar10':
-        timestamps = [19, 49, 99, 249, 499] # [19, 49, 99, 249, 499], [99, 199, 299, 499, 749]
-        
-    elif dataset == 'mnist':
-        timestamps = [19, 49, 99, 249, 499] # [19, 49, 99, 249, 499], [99, 199, 299, 499, 749]
+    timestamps = [99, 199, 299, 499, 749] # [19, 49, 99, 249, 499], [99, 199, 299, 499, 749]
 
     # Loop over all timesteps
     for T_t in range(T):
@@ -121,7 +100,7 @@ if __name__ == "__main__":
             # Add 1 to nullify the 0-indexing
             times[counter] = T_t + 1
 
-    # Read in other set of means and stds from .csv file
+    # Read in other set of means and stds from .csv file (requires that referse_process.py has been run)
     data = pd.read_csv(f'poster/mean_std_over_time_denoising_{dataset}_{beta_scheduler}.csv')
 
     # Extract the columns into variables

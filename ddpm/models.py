@@ -2,15 +2,11 @@ import torch
 import torch.nn as nn
 from torch import GradScaler, autocast
 
-import sys
 from .utils import init_weights, loss_function, get_optimizer, get_scheduler, get_beta_schedule, TimeEmbedding
-import math
 from .preprocess import *
 from .forward_process import *
 
 import matplotlib.pyplot as plt
-
-# torch.autograd.set_detect_anomaly(True)
 
 class UNet(nn.Module):
     """
@@ -77,8 +73,7 @@ class UNet(nn.Module):
         self.decoder2 = self.conv_block(self.num_params[1] + self.num_params[0], self.num_params[0], dropout_prob)
         self.decoder1 = nn.Sequential(
             nn.Conv2d(self.num_params[0], out_channels, kernel_size=1),
-            nn.BatchNorm2d(out_channels)#,
-            # nn.Dropout(dropout_prob)
+            nn.BatchNorm2d(out_channels)
         )
         
         # The pooling layer downsamples the input by a factor of 2.
@@ -114,9 +109,6 @@ class UNet(nn.Module):
         time_emb_in = self.time_linear_1(t_emb)[:, :, None, None]  # shape: (batch_size, C, 1, 1)
         time_emb_1 = self.time_linear_2(t_emb)[:, :, None, None]
         time_emb_2 = self.time_linear_3(t_emb)[:, :, None, None]
-        # time_emb_3 = self.time_linear_4(t_emb)[:, :, None, None]
-
-        # x = x + time_emb_in
 
         if self.layers == 2:
             enc1 = self.encoder1(x)
@@ -265,7 +257,7 @@ def train_model(train_loader,\
         train_loss = sum(losses) / len(losses)
  
 
-        # test phase
+        ### Test Phase ###
         # Set the model to evaluation mode
         model.eval()
         
@@ -317,9 +309,6 @@ def train_model(train_loader,\
             best_epoch = epoch
             print(f'Validation loss improved. Saving model weights to model_weights/{file_name}_{early_stopping}.pt')
             torch.save(model.state_dict(), f'model_weights/{file_name}_{early_stopping}.pt')
-            
-            # if neptune_log:
-            #     neptune_log["model/best_model"].upload(best_epoch)
 
         # stop if the test loss is not improving after x percentage of total epochs
         elif early_stopping and (epoch - best_epoch > 0.6 * num_epochs):
@@ -364,6 +353,3 @@ if __name__ == '__main__':
     plt.ylabel('Loss')
     plt.title('Training Loss')
     plt.savefig('plots/training_loss.png')
-
-    # Save model
-    #torch.save(model.state_dict(), 'model_weights/model_e06.pt')
