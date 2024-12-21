@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from torch import GradScaler, autocast
 
 import sys
 import utils
@@ -53,12 +54,14 @@ class UNet(nn.Module):
             self.layers = 3
             self.num_params = [64, 128, 256, 512]
 
-        # Linear layer to project time embedding to match input channels
-        self.time_linear_in = nn.Linear(self.image_shape, in_channels)
-        self.time_linear_1 = nn.Linear(self.num_params[0], self.num_params[0])
-        self.time_linear_2 = nn.Linear(self.num_params[1], self.num_params[1])
-        self.time_linear_3 = nn.Linear(self.num_params[2], self.num_params[2])
-        self.time_linear_4 = nn.Linear(self.num_params[3], self.num_params[3])
+        self.time_embed_dim = self.num_params[0]
+        self.time_mlp = utils.TimeEmbedding(self.time_embed_dim)
+
+        # Create linear layers that map from time_embed_dim*4 to the appropriate number of channels
+        self.time_linear_1 = nn.Linear(self.time_embed_dim * 4, self.num_params[0])
+        self.time_linear_2 = nn.Linear(self.time_embed_dim * 4, self.num_params[1])
+        self.time_linear_3 = nn.Linear(self.time_embed_dim * 4, self.num_params[2])
+        self.time_linear_4 = nn.Linear(self.time_embed_dim * 4, self.num_params[3])
         
         # conv_block consists of two convolutional layers followed by ReLU activations.
         self.encoder1 = self.conv_block(in_channels, self.num_params[0], dropout_prob)
@@ -97,47 +100,27 @@ class UNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.Dropout(dropout_prob)
         )
-    
-    def sinusoidal_embedding(self, t, embed_dim):
-        """
-        Generates sinusoidal embeddings for the time step.
-        Args:
-            t (torch.Tensor): Input tensor of shape (batch_size,).
-            embed_dim (int): Dimensionality of the embedding.
-        Returns:
-            torch.Tensor: Sinusoidal embeddings of shape (batch_size, embed_dim).
-        """
-        device = t.device
-        half_dim = embed_dim // 2
-        emb = math.log(10000) / (half_dim - 1)
-        emb = torch.exp(torch.arange(half_dim, device=device) * -emb)
-        emb = t[:, None] * emb[None, :]
-        emb = torch.cat([torch.sin(emb), torch.cos(emb)], dim=-1)
-        return emb
 
     def forward(self, x, t, verbose=False):
         """Forward pass of the U-Net model.
         Verbose mode prints the shape of intermediate tensors."""
         
-        # Generate sinusoidal time embeddings
-        time_emb_in = self.sinusoidal_embedding(t, self.image_shape)
-        time_emb_in = self.time_linear_in(time_emb_in).unsqueeze(-1).unsqueeze(-1)
-        time_emb_1 = self.sinusoidal_embedding(t, self.num_params[0])
-        time_emb_1 = self.time_linear_1(time_emb_1).unsqueeze(-1).unsqueeze(-1)
-        time_emb_2 = self.sinusoidal_embedding(t, self.num_params[1])
-        time_emb_2 = self.time_linear_2(time_emb_2).unsqueeze(-1).unsqueeze(-1)
-        time_emb_3 = self.sinusoidal_embedding(t, self.num_params[2])
-        time_emb_3 = self.time_linear_3(time_emb_3).unsqueeze(-1).unsqueeze(-1)
-        time_emb_4 = self.sinusoidal_embedding(t, self.num_params[3])
-        time_emb_4 = self.time_linear_4(time_emb_4).unsqueeze(-1).unsqueeze(-1)
+        # Compute the time embedding once
+        t_emb = self.time_mlp(t)  # shape: (batch_size, time_embed_dim * 4)
 
-        x = x + time_emb_in
+        # For each block, project t_emb to match block channels and add:
+        time_emb_in = self.time_linear_1(t_emb)[:, :, None, None]  # shape: (batch_size, C, 1, 1)
+        time_emb_1 = self.time_linear_2(t_emb)[:, :, None, None]
+        time_emb_2 = self.time_linear_3(t_emb)[:, :, None, None]
+        # time_emb_3 = self.time_linear_4(t_emb)[:, :, None, None]
+
+        # x = x + time_emb_in
 
         if self.layers == 2:
             enc1 = self.encoder1(x)
-            enc1 = enc1 + time_emb_1
+            enc1 = enc1 + time_emb_in
             enc2 = self.encoder2(self.pool(enc1))
-            enc2 = enc2 + time_emb_2
+            enc2 = enc2 + time_emb_1
 
             bottleneck = self.encoder3(self.pool(enc2))
             bottleneck_upconv = self.upconv3(bottleneck)
@@ -151,11 +134,11 @@ class UNet(nn.Module):
 
         elif self.layers == 3:
             enc1 = self.encoder1(x)
-            enc1 = enc1 + time_emb_1
+            enc1 = enc1 + time_emb_in
             enc2 = self.encoder2(self.pool(enc1))
-            enc2 = enc2 + time_emb_2
+            enc2 = enc2 + time_emb_1
             enc3 = self.encoder3(self.pool(enc2))
-            enc3 = enc3 + time_emb_3
+            enc3 = enc3 + time_emb_2
 
             bottleneck = self.encoder4(self.pool(enc3))
             bottleneck_upconv = self.upconv4(bottleneck)
@@ -233,6 +216,10 @@ def train_model(train_loader,\
     # Get the learning rate scheduler
     lr_scheduler = utils.get_scheduler(optimizer, lr_scheduler, num_epochs)
 
+    # Mixed Precision Training
+    # prevent underflow and handle loss scaling automatically
+    scaler = GradScaler(f"{device}")
+
     # Start training
     for epoch in range(num_epochs):
         # Set the model to training mode
@@ -257,17 +244,19 @@ def train_model(train_loader,\
             batch_noised = batch_noised.to(device)
             noise = noise.to(device)
 
-            # Forward pass
-            predicted_noise = model.forward(batch_noised, t, verbose=False)
+            with autocast(f"{device}"):
+                # Forward pass
+                predicted_noise = model.forward(batch_noised, t, verbose=False)
 
-            # Compute loss
-            loss = utils.loss_function(predicted_noise, noise)
-
+                # Compute loss
+                loss = utils.loss_function(predicted_noise, noise)
+    
             # Compute gradients based on the loss from the current batch (backpropagation).
-            loss.backward()
+            scaler.scale(loss).backward()
             
             # Take one optimizer step using the gradients computed in the previous step.
-            optimizer.step()
+            scaler.step(optimizer)
+            scaler.update()
 
             # Save the loss
             losses.append(loss.item())
