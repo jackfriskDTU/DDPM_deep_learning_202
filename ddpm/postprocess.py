@@ -44,7 +44,7 @@ def sample_and_plot(model, betas, shape, device, time_dim, filename, early_stopp
     for i, img in enumerate(ten_sample):
         img = transform_range(img, img.min(), img.max(), 0, 1)
         img = img.permute(1, 2, 0)
-        axes[i].imshow(img.detach().cpu().numpy(), cmap='gray')
+        axes[i].imshow(img.detach().cpu().numpy())
         axes[i].axis('off')
     fig.savefig(f'saved_images_{dataset}/{filename}_{early_stopping}.png')
 

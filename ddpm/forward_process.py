@@ -68,7 +68,7 @@ if __name__ == "__main__":
     # Add batch dimension to img to make it work with add_noise()
     img = img.unsqueeze(0)
     if dataset == 'cifar10':
-        T = 1000
+        T = 500
     elif dataset == 'mnist':
         T = 500
     betas = get_beta_schedule(beta_scheduler, T, device, beta_lower=1e-4, beta_upper=0.02)
@@ -91,10 +91,10 @@ if __name__ == "__main__":
 
     # These are the timesteps to save the images
     if dataset == 'cifar10':
-        timestamps = [99, 199, 499, 749, 999]
+        timestamps = [19, 49, 99, 249, 499] # [19, 49, 99, 249, 499], [99, 199, 299, 499, 749]
         
     elif dataset == 'mnist':
-        timestamps = [19, 49, 99, 249, 499]
+        timestamps = [19, 49, 99, 249, 499] # [19, 49, 99, 249, 499], [99, 199, 299, 499, 749]
 
     # Loop over all timesteps
     for T_t in range(T):
@@ -120,9 +120,6 @@ if __name__ == "__main__":
 
             # Add 1 to nullify the 0-indexing
             times[counter] = T_t + 1
-
-            # Save the noisy image
-            save_image(img_noisy, save_dir='poster', filename=f'noisy_{T_t+1}_image_{dataset}_{beta_scheduler}.png')
 
     # Read in other set of means and stds from .csv file
     data = pd.read_csv(f'poster/mean_std_over_time_denoising_{dataset}_{beta_scheduler}.csv')
@@ -194,6 +191,6 @@ if __name__ == "__main__":
                     f"Mean: {means[int(time) - 1]:.2f}, Std: {stds[int(time) - 1]:.2f}",
                     ha='center', va='center', 
                     transform=axes[row, col].transAxes, fontsize=8, color='#404040')
-    plt.savefig(f'poster/progressive_noise_diffusion_{dataset}_{beta_scheduler}.png')
+    plt.savefig(f'poster/progressive_noise_diffusion_{dataset}_{beta_scheduler}_{T}.png')
     plt.close
     
