@@ -10,6 +10,8 @@ from forward_process import *
 
 import matplotlib.pyplot as plt
 
+# torch.autograd.set_detect_anomaly(True)
+
 class UNet(nn.Module):
     """
     U-Net model for image-to-image translation tasks with time embedding.
@@ -232,7 +234,7 @@ def train_model(train_loader,\
         for batch, _ in train_loader:
             # Send to device
             batch = batch.to(device, non_blocking=True)
-
+            batch.isnan().any()
             # Clean up gradients from the model.
             optimizer.zero_grad()
 
@@ -242,14 +244,17 @@ def train_model(train_loader,\
             # Add noise
             batch_noised, noise = add_noise(batch, betas, t, device)
             batch_noised = batch_noised.to(device)
+            batch_noised.isnan().any()
             noise = noise.to(device)
+            noise.isnan().any()
 
-            with autocast(f"{device}"):
+            with autocast(f"{device}", dtype=torch.bfloat16):
                 # Forward pass
                 predicted_noise = model.forward(batch_noised, t, verbose=False)
-
+                predicted_noise.isnan().any()
                 # Compute loss
                 loss = utils.loss_function(predicted_noise, noise)
+                loss.isnan().any()
     
             # Compute gradients based on the loss from the current batch (backpropagation).
             scaler.scale(loss).backward()
