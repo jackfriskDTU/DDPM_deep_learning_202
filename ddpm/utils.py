@@ -99,17 +99,12 @@ def get_beta_schedule(schedule_type, T, device, beta_lower=1e-4, beta_upper=0.02
     
     elif schedule_type == "Cosine":
         # Cosine schedule from "Improved Denoising Diffusion Probabilistic Models"
-        # alpha_bar(t) = (cos(((t/T) + s) / (1+s) * (pi/2)))^2
         s = 0.008  # small offset
         steps = torch.arange(T, device=device, dtype=torch.float)
         
         # Compute alpha_bar at each timestep
         alpha_bar = (torch.cos(((steps/T) + s) / (1 + s) * math.pi/2) ** 2)
         
-        # alpha_bar[0] = 1.0 by definition. Now compute betas:
-        # alpha_bar(t) = alpha_t * alpha_bar(t-1)
-        # => alpha_t = alpha_bar(t)/alpha_bar(t-1)
-        # and beta_t = 1 - alpha_t
         alpha_bar_shifted = torch.cat([torch.tensor([1.0], device=device), alpha_bar[:-1]])
         alphas = alpha_bar / alpha_bar_shifted
         betas = 1 - alphas
@@ -150,5 +145,5 @@ class TimeEmbedding(nn.Module):
         # t: (batch_size,)
         emb = sinusoidal_embedding(t, self.mlp[0].in_features)
         # emb shape: (batch_size, time_embed_dim)
-        emb = self.mlp(emb) # shape: (batch_size, time_embed_dim * 4)
+        emb = self.mlp(emb)
         return emb

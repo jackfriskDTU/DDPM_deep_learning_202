@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import os
-from PIL import Image
+
 from torchvision import transforms
 from .reverse_process import sample
 
